@@ -34,7 +34,7 @@ public class BitianInterceptor implements Interceptor{
 
 	@Override
 	public void setProperties(Properties properties) {
-		
+		System.out.println(properties);
 	}
 
 }

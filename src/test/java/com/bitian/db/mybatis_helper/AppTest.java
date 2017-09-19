@@ -27,7 +27,6 @@ public class AppTest extends TestCase {
     	ds.setDriverClassName("com.mysql.jdbc.Driver");
     	TransactionFactory f=new JdbcTransactionFactory();
     	Environment en=new Environment("weffe", f, ds);
-    	System.out.println(App.class.getClassLoader().getResource("mybatis-config.xml"));
     	XMLConfigBuilder builder=new XMLConfigBuilder(App.class.getClassLoader().getResourceAsStream("mybatis-config.xml"));
     	Configuration c=builder.parse();
     	System.out.println(c.isMapUnderscoreToCamelCase());
@@ -38,6 +37,7 @@ public class AppTest extends TestCase {
     	SqlSession session=factory.openSession();
     	List<Map<String, Object>> list= session.selectList("com.bitian.test.selectAll");
     	System.out.println(list);
+    	System.out.println(session.getMapper(TestMapper.class).selectById("1"));
     	session.close();
         System.out.println( "Hello World!" );
     }

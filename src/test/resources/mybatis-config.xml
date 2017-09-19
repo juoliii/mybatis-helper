@@ -9,7 +9,9 @@
 		<package name="com.bitian"/>
 	</typeAliases>
 	<plugins>
-		<plugin interceptor="com.bitian.db.mybatis_helper.plugins.BitianInterceptor"></plugin>
+		<plugin interceptor="com.bitian.db.mybatis_helper.plugins.BitianInterceptor">
+			<property name="showSql" value="true"/>
+		</plugin>
 	</plugins>
 	<mappers>
 		<mapper resource="com/bitian/db/mybatis_helper/SysCodeMapper.xml"/>
