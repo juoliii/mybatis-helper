@@ -8,8 +8,11 @@
 	<typeAliases>
 		<package name="com.bitian"/>
 	</typeAliases>
-	
+	<plugins>
+		<plugin interceptor="com.bitian.db.mybatis_helper.plugins.BitianInterceptor"></plugin>
+	</plugins>
 	<mappers>
+		<mapper resource="com/bitian/db/mybatis_helper/SysCodeMapper.xml"/>
 		<package name="com.bitian"/>
 	</mappers>
 </configuration> 
