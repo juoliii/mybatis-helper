@@ -38,14 +38,15 @@ public class BitianInterceptor extends PageHelper implements Interceptor {
 			BoundSql boundSql = statementHandler.getBoundSql();
 			String sql = boundSql.getSql();
 			// 查询sql
-			if (isQuery(sql)) {
+			Page page=PageHelper.getCurrentPage();
+			if (isQuery(sql) && page!=null) {
 				MappedStatement mst=(MappedStatement) ReflectUtil.getFieldValueForMappedStatement(statementHandler);
 				Connection connection = (Connection) invocation.getArgs()[0];
 				setTotalRecord(mst, boundSql, connection);
-				sql=dialect.pageSql(sql,PageHelper.getCurrentPage());
+				sql=dialect.pageSql(sql,page);
 				ReflectUtil.setFieldValue(boundSql, "sql", sql);
+				System.out.println(sql);
 			}
-			System.out.println(sql);
 		}
 		return invocation.proceed();
 	}

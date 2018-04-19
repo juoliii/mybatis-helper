@@ -7,6 +7,6 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 public interface TestMapper {
-	@Select(value= {" select * from banner where id>#{id}"})
+	@Select(value= {" select * from banner where id>#{id} order by id desc"})
 	public List<Map<String,Object>> select(@Param("id")int id);
 }
