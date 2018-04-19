@@ -44,7 +44,7 @@ maven引用：
 ```
 <dependency>  
     <groupId>com.bitian.db</groupId>  
-    <artifactId>mybatis_helper</artifactId>  
+    <artifactId>mybatis-helper</artifactId>  
     <version>0.0.1</version>
 </dependency> 
 ```
