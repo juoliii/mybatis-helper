@@ -8,5 +8,5 @@ import org.apache.ibatis.annotations.Select;
 
 public interface TestMapper {
 	@Select(value= {" select * from banner where id>#{id}"})
-	public List<Map<String,Object>> selectById(@Param("id")int id);
+	public List<Map<String,Object>> select(@Param("id")int id);
 }

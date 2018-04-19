@@ -36,7 +36,7 @@ public class AppTest extends TestCase {
     	SqlSessionFactory factory=new SqlSessionFactoryBuilder().build(c);
     	SqlSession session=factory.openSession();
     	PageHelper.startPage(1, 1);
-    	System.out.println(session.getMapper(TestMapper.class).selectById(0));
+    	List<Map<String, Object>> list=session.getMapper(TestMapper.class).select(0);
     	Page page=PageHelper.getPage();
     	System.out.println(page.getTotal());
     	session.close();
