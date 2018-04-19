@@ -22,12 +22,12 @@ public class AppTest extends TestCase {
     public void test1( ) {
     	BasicDataSource ds=new BasicDataSource();
     	ds.setUsername("root");
-    	ds.setPassword("598741236hh");
-    	ds.setUrl("jdbc:mysql://sh-cdb-0t0erw5p.sql.tencentcdb.com:63987/yonganjituan?useUnicode\\=true&characterEncoding\\=utf8");
+    	ds.setPassword("123456");
+    	ds.setUrl("jdbc:mysql://192.168.0.15:3306/beesgarden?useUnicode\\=true&characterEncoding\\=utf8");
     	ds.setDriverClassName("com.mysql.jdbc.Driver");
     	TransactionFactory f=new JdbcTransactionFactory();
     	Environment en=new Environment("weffe", f, ds);
-    	XMLConfigBuilder builder=new XMLConfigBuilder(App.class.getClassLoader().getResourceAsStream("mybatis-config.xml"));
+    	XMLConfigBuilder builder=new XMLConfigBuilder(PageHelper.class.getClassLoader().getResourceAsStream("mybatis-config.xml"));
     	Configuration c=builder.parse();
     	System.out.println(c.isMapUnderscoreToCamelCase());
     	System.out.println(c.getParameterMapNames().size());
@@ -35,11 +35,11 @@ public class AppTest extends TestCase {
     	c.setEnvironment(en);
     	SqlSessionFactory factory=new SqlSessionFactoryBuilder().build(c);
     	SqlSession session=factory.openSession();
-    	List<Map<String, Object>> list= session.selectList("com.bitian.test.selectAll");
-    	System.out.println(list);
-    	System.out.println(session.getMapper(TestMapper.class).selectById("1"));
+    	PageHelper.startPage(1, 1);
+    	System.out.println(session.getMapper(TestMapper.class).selectById(0));
+    	Page page=PageHelper.getPage();
+    	System.out.println(page.getTotal());
     	session.close();
-        System.out.println( "Hello World!" );
     }
 
 }

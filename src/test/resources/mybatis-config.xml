@@ -10,7 +10,7 @@
 	</typeAliases>
 	<plugins>
 		<plugin interceptor="com.bitian.db.mybatis_helper.plugins.BitianInterceptor">
-			<property name="showSql" value="true"/>
+			<property name="dialect" value="mysql"/>
 		</plugin>
 	</plugins>
 	<mappers>
