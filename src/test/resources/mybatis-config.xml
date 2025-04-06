@@ -14,7 +14,7 @@
 		</plugin>
 	</plugins>
 	<mappers>
-		<mapper resource="com/bitian/db/mybatis_helper/SysCodeMapper.xml"/>
+<!--		<mapper resource="com/bitian/db/mybatis_helper/SysCodeMapper.xml"/>-->
 		<package name="com.bitian"/>
 	</mappers>
 </configuration> 

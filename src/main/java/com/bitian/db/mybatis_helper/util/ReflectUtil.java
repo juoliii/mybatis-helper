@@ -5,6 +5,10 @@ import java.lang.reflect.Field;
 import org.apache.ibatis.mapping.MappedStatement;
 
 public class ReflectUtil {
+
+	public static String testval(){
+		return "order by id";
+	}
 	
 	public static Object getFieldValue(Object target,String name){
 		Object value=null;

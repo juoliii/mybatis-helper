@@ -1,11 +1,12 @@
 # mybatis-helper
-mybatis帮助插件，日志、分页、简单增删改查等
-目前已经完成简单的分页插件,无入侵式
-目前只支持mysql数据库
-***
-使用方法：
+## 1. 功能
+- 分页
+- 去xml，通过groovy模板写sql
 
----
+mybatis帮助插件,目前已经完成简单的分页插件,无入侵式
+目前只支持mysql数据库
+
+## 2.使用方法
 
 ```
 <plugins>
@@ -24,22 +25,6 @@ maven引用：
 
 ---
 
-
-先加入repositories：
-
-
-```
-<repositories>  
-   <repository>
-		<id>maven-repo-master</id>
-		<url>https://raw.github.com/juoliii/maven-repo/master/</url>
-		<snapshots>
-		    <enabled>true</enabled>
-		    <updatePolicy>always</updatePolicy>
-		</snapshots>
-	</repository>
-</repositories>
-```
 加入依赖
 
 ```

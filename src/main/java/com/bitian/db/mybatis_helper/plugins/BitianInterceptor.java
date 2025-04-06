@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Properties;
 
 import org.apache.ibatis.executor.parameter.ParameterHandler;
@@ -17,6 +18,7 @@ import org.apache.ibatis.plugin.Invocation;
 import org.apache.ibatis.plugin.Plugin;
 import org.apache.ibatis.plugin.Signature;
 import org.apache.ibatis.scripting.defaults.DefaultParameterHandler;
+import org.apache.ibatis.session.ResultHandler;
 
 import com.bitian.db.mybatis_helper.Page;
 import com.bitian.db.mybatis_helper.PageHelper;
@@ -24,7 +26,7 @@ import com.bitian.db.mybatis_helper.dialect.BtDialect;
 import com.bitian.db.mybatis_helper.dialect.MySQLDialect;
 import com.bitian.db.mybatis_helper.util.ReflectUtil;
 
-@Intercepts({ @Signature(type = StatementHandler.class, method = "prepare", args = { Connection.class }) })
+@Intercepts({ @Signature(type = StatementHandler.class, method = "query", args = { Statement.class,ResultHandler.class }) })
 public class BitianInterceptor extends PageHelper implements Interceptor {
 	
 	private BtDialect dialect;
@@ -39,10 +41,11 @@ public class BitianInterceptor extends PageHelper implements Interceptor {
 			String sql = boundSql.getSql();
 			// 查询sql
 			Page page=PageHelper.getCurrentPage();
+			System.out.println(invocation.getArgs()[0]);
 			if (isQuery(sql) && page!=null) {
 				MappedStatement mst=(MappedStatement) ReflectUtil.getFieldValueForMappedStatement(statementHandler);
-				Connection connection = (Connection) invocation.getArgs()[0];
-				setTotalRecord(mst, boundSql, connection);
+				Statement statement = (Statement) invocation.getArgs()[0];
+				setTotalRecord(mst, boundSql, statement.getConnection());
 				sql=dialect.pageSql(sql,page);
 				ReflectUtil.setFieldValue(boundSql, "sql", sql);
 				System.out.println(sql);
