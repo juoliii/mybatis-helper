@@ -1,6 +1,7 @@
 package com.bitian.db.mybatis_helper;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,8 +50,15 @@ public class AppTest extends TestCase {
 //    	System.out.println(list);
 		TestDto dto=new TestDto();
 		dto.setId(1L);
+		dto.setAbc("abc123");
 		List<Map<String, Object>> list1=session.getMapper(TestMapper.class).selectAll1(dto);
     	session.close();
     }
+
+	public static void main(String[] args) {
+		Map<String,Object> map=new HashMap<>();
+		map.put("fwef",null);
+		System.out.println(map.get("fwef"));
+	}
 
 }

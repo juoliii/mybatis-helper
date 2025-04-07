@@ -1,10 +1,6 @@
 package com.bitian.db.mybatis_helper.script;
 
 import com.bitian.db.mybatis_helper.util.ContextMap;
-import com.bitian.db.mybatis_helper.util.ReflectUtil;
-import groovy.text.GStringTemplateEngine;
-import groovy.text.SimpleTemplateEngine;
-import groovy.text.StreamingTemplateEngine;
 import groovy.text.Template;
 import org.apache.ibatis.builder.SqlSourceBuilder;
 import org.apache.ibatis.mapping.BoundSql;
@@ -13,7 +9,6 @@ import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.scripting.xmltags.DynamicContext;
 import org.apache.ibatis.session.Configuration;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -58,6 +53,8 @@ public class GroovySqlSource implements SqlSource {
         Class<?> parameterType = parameterObject == null ? Object.class : parameterObject.getClass();
         Class<?> clazz = parameterType == null ? Object.class : parameterType;
         SqlSource sqlSource = sqlSourceParser.parse(response, clazz, new HashMap<>());
+        BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
+        bindings.forEach((k,v)->boundSql.setAdditionalParameter(k.toString(),v));
         return sqlSource.getBoundSql(parameterObject);
     }
 }

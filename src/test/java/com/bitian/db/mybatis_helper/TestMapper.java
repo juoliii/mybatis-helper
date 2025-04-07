@@ -18,7 +18,7 @@ public interface TestMapper {
 
 	void insertBatch(List<String> list);
 
-	@Select("<% import com.bitian.db.mybatis_helper.util.ReflectUtil;%> \n SELECT * FROM sys_user <% if(id>0) \n print 'order by id' %> ")
+	@Select(" SELECT * FROM sys_user <% if(ids) \n print abc %> ")
 	@Lang(GroovyLanguageDriver.class)
 	List<Map<String,Object>> selectAll1(TestDto dto);
 }
