@@ -1,17 +1,11 @@
 package com.bitian.db.mybatis_helper.script;
 
 import groovy.lang.*;
-import groovy.text.Template;
-import groovy.text.TemplateEngine;
 import org.apache.groovy.io.StringBuilderWriter;
 import org.codehaus.groovy.control.CompilationFailedException;
 import org.codehaus.groovy.runtime.InvokerHelper;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.Reader;
-import java.io.Writer;
+import java.io.*;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -55,7 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 'Groovy for COBOL programmers' was accepted.
  *
  */
-public class SimpleTemplateEngine extends TemplateEngine {
+public class SimpleTemplateEngine {
     private boolean verbose;
     private static AtomicInteger counter = new AtomicInteger(0);
     private GroovyShell groovyShell;
@@ -78,10 +72,9 @@ public class SimpleTemplateEngine extends TemplateEngine {
         this.groovyShell = groovyShell;
     }
 
-    @Override
-    public Template createTemplate(Reader reader) throws CompilationFailedException, IOException {
+    public SimpleTemplate createTemplate(String reader) throws CompilationFailedException, IOException {
         SimpleTemplate template = new SimpleTemplate(escapeBackslash);
-        String script = template.parse(reader);
+        String script = template.parse(new StringReader(reader));
         if (verbose) {
             System.out.println("\n-- script source --");
             System.out.print(script);
@@ -106,7 +99,7 @@ public class SimpleTemplateEngine extends TemplateEngine {
         return verbose;
     }
 
-    private static class SimpleTemplate implements Template {
+    public static class SimpleTemplate {
 
         protected Script script;
         private boolean escapeBackslash;
@@ -120,12 +113,10 @@ public class SimpleTemplateEngine extends TemplateEngine {
         }
 
 
-        @Override
         public Writable make() {
             return make(null);
         }
 
-        @Override
         public Writable make(final Map map) {
             return new Writable() {
                 /**
@@ -133,7 +124,6 @@ public class SimpleTemplateEngine extends TemplateEngine {
                  *
                  * @see groovy.lang.Writable#writeTo(java.io.Writer)
                  */
-                @Override
                 public Writer writeTo(Writer writer) {
                     Binding binding;
                     if (map == null)

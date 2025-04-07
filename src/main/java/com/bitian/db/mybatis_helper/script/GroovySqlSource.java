@@ -1,7 +1,6 @@
 package com.bitian.db.mybatis_helper.script;
 
 import com.bitian.db.mybatis_helper.util.ContextMap;
-import groovy.text.Template;
 import org.apache.ibatis.builder.SqlSourceBuilder;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.SqlSource;
@@ -21,7 +20,7 @@ public class GroovySqlSource implements SqlSource {
 
     private final String sql;
 
-    Template template ;
+    SimpleTemplateEngine.SimpleTemplate template ;
 
     public GroovySqlSource(Configuration configuration, String sql, Class<?> parameterType) {
         this.configuration=configuration;
@@ -41,7 +40,7 @@ public class GroovySqlSource implements SqlSource {
             MetaObject metaObject = configuration.newMetaObject(parameterObject);
             boolean existsTypeHandler = configuration.getTypeHandlerRegistry().hasTypeHandler(parameterObject.getClass());
             bindings = new ContextMap(metaObject, existsTypeHandler);
-        } else {
+        }else {
             bindings = new ContextMap(null, false);
         }
         bindings.put(DynamicContext.PARAMETER_OBJECT_KEY, parameterObject);

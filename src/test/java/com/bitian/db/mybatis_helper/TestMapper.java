@@ -10,7 +10,8 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 public interface TestMapper {
-	@Select("select * from sys_user where id>#{id} order by id desc")
+	@Select("select * from sys_user <% if(id>0) \n print abc ; this.testkey=123%> order by id desc")
+	@Lang(GroovyLanguageDriver.class)
 	List<Map<String,Object>> select(@Param("id")int id,@Param("test") String test);
 
 	@Insert("insert into test(name) values(#{name})")
