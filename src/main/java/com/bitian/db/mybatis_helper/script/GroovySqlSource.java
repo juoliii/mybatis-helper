@@ -54,6 +54,6 @@ public class GroovySqlSource implements SqlSource {
         SqlSource sqlSource = sqlSourceParser.parse(response, clazz, new HashMap<>());
         BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
         bindings.forEach((k,v)->boundSql.setAdditionalParameter(k.toString(),v));
-        return sqlSource.getBoundSql(parameterObject);
+        return boundSql;
     }
 }

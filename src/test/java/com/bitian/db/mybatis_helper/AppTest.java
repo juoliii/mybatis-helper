@@ -46,7 +46,7 @@ public class AppTest extends TestCase {
 //		session.commit();
 //		session=factory.openSession();
 //    	PageHelper.startPage(1, 20);
-    	List<Map<String, Object>> list=session.getMapper(TestMapper.class).select(0,"12");
+    	List<Map<String, Object>> list=session.getMapper(TestMapper.class).select(1,"12");
     	System.out.println(list);
 //		TestDto dto=new TestDto();
 //		dto.setId(1L);
