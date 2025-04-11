@@ -4,7 +4,7 @@
 
     <groupId>io.github.juoliii</groupId>
     <artifactId>mybatis-helper</artifactId>
-    <version>0.0.3</version>
+    <version>0.0.4</version>
     <packaging>jar</packaging>
     <description>mybatis-helper</description>
     <name>mybatis-helper</name>
@@ -89,6 +89,29 @@
 
     <build>
         <plugins>
+
+            <plugin>
+                <groupId>org.codehaus.gmavenplus</groupId>
+                <artifactId>gmavenplus-plugin</artifactId>
+                <version>4.1.1</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>addSources</goal>
+                            <goal>addTestSources</goal>
+                            <goal>generateStubs</goal>
+                            <goal>compile</goal>
+                            <goal>generateTestStubs</goal>
+                            <goal>compileTests</goal>
+                            <goal>removeStubs</goal>
+                            <goal>removeTestStubs</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <parameters>true</parameters>
+                </configuration>
+            </plugin>
 
             <plugin>
                 <groupId>org.sonatype.central</groupId>

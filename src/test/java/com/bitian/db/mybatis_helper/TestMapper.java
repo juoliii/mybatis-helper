@@ -10,7 +10,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 public interface TestMapper {
-	@Select("select * from sys_user <% this.testkey=10; if(id>0) \n print 'where id=#{testkey}' %> ")
+	@Select("select * from sys_user <% this.testkey=10; %> ${sql(0,'where id=#{testkey}') } ")
 	@Lang(GroovyLanguageDriver.class)
 	List<Map<String,Object>> select(@Param("id")int id,@Param("test") String test);
 
@@ -19,7 +19,7 @@ public interface TestMapper {
 
 	void insertBatch(List<String> list);
 
-	@Select(" SELECT * FROM sys_user <% if(ids) \n print abc %> ")
-	@Lang(GroovyLanguageDriver.class)
-	List<Map<String,Object>> selectAll1(TestDto dto);
+//	@Select(" SELECT * FROM sys_user <% if(ids) \n print abc %> ")
+//	@Lang(GroovyLanguageDriver.class)
+//	List<Map<String,Object>> selectAll1(TestDto dto);
 }
