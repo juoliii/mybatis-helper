@@ -28,7 +28,6 @@ public class GroovySqlSource implements SqlSource {
         this.sql= Constant.templateHeader+sql;
         try{
             SimpleTemplateEngine engine = new SimpleTemplateEngine(this.getClass().getClassLoader());
-            engine.setVerbose(true);
             template=engine.createTemplate(this.sql);
         }catch (Exception e) {
             throw new RuntimeException(e);

@@ -252,12 +252,24 @@ public class SimpleTemplateEngine {
 
         private void processGSstring(Reader reader, StringBuilderWriter sw) throws IOException {
             int c;
+            int n=0;
             while ((c = reader.read()) != -1) {
+                if (c == '#') {
+                    reader.mark(1);
+                    c = reader.read();
+                    if (c == '{') {
+                        n++;
+                        reader.reset();
+                    }
+                }
                 if (c != '\n' && c != '\r') {
                     sw.write(c);
                 }
-                if (c == '}') {
+                if (c == '}'&&n==0) {
                     break;
+                }
+                if (c == '}') {
+                    n--;
                 }
             }
         }
