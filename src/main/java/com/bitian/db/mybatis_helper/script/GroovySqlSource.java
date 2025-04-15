@@ -22,13 +22,17 @@ public class GroovySqlSource implements SqlSource {
 
     private final Configuration configuration;
 
-    private final String sql;
+    private String sql;
 
-    SimpleTemplateEngine.SimpleTemplate template ;
+    private String originSql;
 
-    public GroovySqlSource(Configuration configuration, String sql, Class<?> parameterType) {
-        this.configuration=configuration;
-        this.sql= Constant.templateHeader+sql;
+    SimpleTemplateEngine.SimpleTemplate template;
+
+    MappedStatement statement;
+
+    private void init(String tmpSql){
+        this.originSql=tmpSql;
+        this.sql= Constant.templateHeader+tmpSql;
         try{
             SimpleTemplateEngine engine = new SimpleTemplateEngine(this.getClass().getClassLoader());
             template=engine.createTemplate(this.sql);
@@ -37,11 +41,25 @@ public class GroovySqlSource implements SqlSource {
         }
     }
 
+    public GroovySqlSource(Configuration configuration, String sql, Class<?> parameterType) {
+        this.configuration=configuration;
+        this.init(sql);
+    }
+
     @Override
     public BoundSql getBoundSql(Object parameterObject) {
-        MappedStatement statement=configuration.getMappedStatements().stream().filter(t->t.getSqlSource()==this).findFirst().get();
-        Class entityClass=MapperUtil.getEntityClass(statement);
-        Entity entity=MapperUtil.generateEntity(entityClass);
+        //获取sqlSource对应的mappedStatement
+        if(statement==null){
+            statement=configuration.getMappedStatements().stream().filter(t->t.getSqlSource()==this).findFirst().get();
+            Class<?> entityClass=MapperUtil.getEntityClass(statement);
+            if(entityClass!=null){
+                Entity entity=MapperUtil.generateEntity(statement.getId(),entityClass);
+                //匹配上BTMapper中的方法
+                if(statement.getId().endsWith(this.originSql)){
+                    this.init(MapperUtil.generateSql(entity,this.originSql));
+                }
+            }
+        }
         ContextMap bindings;
         if (parameterObject != null && !(parameterObject instanceof Map)) {
             MetaObject metaObject = configuration.newMetaObject(parameterObject);

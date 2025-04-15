@@ -8,4 +8,8 @@ class Entity {
     Class<?> entityClass
     EntityColumn pkColumn
     List<EntityColumn> columns
+
+    List<String> columnNames(){
+        return columns.collect{it.column}
+    }
 }

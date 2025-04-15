@@ -23,16 +23,13 @@ import junit.framework.TestCase;
 
 public class AppTest extends TestCase {
 
-	static {
-		MybatisInject.init();
-	}
 
 	@Test
     public void test1( ) {
     	BasicDataSource ds=new BasicDataSource();
     	ds.setUsername("root");
-    	ds.setPassword("asdf-123");
-    	ds.setUrl("jdbc:mysql://192.168.20.14:3306/test_groovy?useUnicode=true&characterEncoding=utf8");
+    	ds.setPassword("1qaz2wsx");
+    	ds.setUrl("jdbc:mysql://192.168.31.99:3306/caika?useUnicode=true&characterEncoding=utf8");
     	ds.setDriverClassName("com.mysql.jdbc.Driver");
     	TransactionFactory f=new JdbcTransactionFactory();
     	Environment en=new Environment("weffe", f, ds);
@@ -41,7 +38,6 @@ public class AppTest extends TestCase {
     	System.out.println(c.isMapUnderscoreToCamelCase());
     	System.out.println(c.getParameterMapNames().size());
     	System.out.println(c.getMappedStatementNames().size());
-		System.out.println(Arrays.stream(c.getClass().getMethods()).map(t->t.getName()).collect(Collectors.toList()));
     	c.setEnvironment(en);
     	SqlSessionFactory factory=new SqlSessionFactoryBuilder().build(c);
     	SqlSession session=factory.openSession();
@@ -56,7 +52,11 @@ public class AppTest extends TestCase {
 //    	PageHelper.startPage(1, 20);
 //    	List<Map<String, Object>> list=session.getMapper(TestMapper.class).select(0,"12");
 //    	System.out.println(list);
-		SysUser su=session.getMapper(TestMapper.class).selectByPrimaryKey(1);
+		SysUser su=new SysUser();
+		su.setId(16831L);
+		su.setNickname("fwefwef");
+		int n=session.getMapper(TestMapper.class).updateByPrimaryKeySelective(su);
+		System.out.println(n);
 //		TestDto dto=new TestDto();
 //		dto.setId(1L);
 //		dto.setAbc("abc123");
@@ -65,9 +65,27 @@ public class AppTest extends TestCase {
     }
 
 	public static void main(String[] args) {
-		Map<String,Object> map=new HashMap<>();
-		map.put("fwef",null);
-		System.out.println(map.get("fwef"));
+		BasicDataSource ds=new BasicDataSource();
+		ds.setUsername("root");
+		ds.setPassword("1qaz2wsx");
+		ds.setUrl("jdbc:mysql://192.168.31.99:3306/caika?useUnicode=true&characterEncoding=utf8");
+		ds.setDriverClassName("com.mysql.jdbc.Driver");
+		TransactionFactory f=new JdbcTransactionFactory();
+		Environment en=new Environment("weffe", f, ds);
+		XMLConfigBuilder builder=new XMLConfigBuilder(PageHelper.class.getClassLoader().getResourceAsStream("mybatis-config.xml"));
+		Configuration c=builder.parse();
+		System.out.println(c.isMapUnderscoreToCamelCase());
+		System.out.println(c.getParameterMapNames().size());
+		System.out.println(c.getMappedStatementNames().size());
+		c.setEnvironment(en);
+		SqlSessionFactory factory=new SqlSessionFactoryBuilder().build(c);
+		SqlSession session=factory.openSession(true);
+		SysUser su=new SysUser();
+		su.setNickname("fwefwef11");
+		su.setUsername("fwefwefffeeff");
+		su.setPassword("ffwefwefgergrg0988");
+		int n=session.getMapper(TestMapper.class).insertSelective(su);
+		System.out.println(n+"===="+su.getId());
 	}
 
 }

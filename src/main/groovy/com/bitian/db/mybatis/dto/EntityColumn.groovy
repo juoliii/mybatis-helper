@@ -11,4 +11,5 @@ class EntityColumn {
     String column
     boolean updateable
     boolean pk
+    Class<?> javaType
 }

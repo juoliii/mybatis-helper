@@ -1,9 +1,9 @@
 package com.bitian.db.mybatis.utils
 
+
 import com.bitian.db.mybatis.dto.Entity
 import com.bitian.db.mybatis.dto.EntityColumn
 import com.bitian.db.mybatis_helper.mp.BTMapper
-import org.apache.ibatis.cache.Cache
 import org.apache.ibatis.mapping.MappedStatement
 
 import javax.persistence.Column
@@ -22,6 +22,7 @@ class MapperUtil {
     static final Map<String,Class<?>> CLASS_CACHE = new LinkedHashMap<>()
 
     static final Map<String,Class<?>> entityClassMap = new LinkedHashMap<>()
+    static final Map<String,Entity> entityObjectMap = new LinkedHashMap<>()
 
     /**
      * 将mapperStatement的id转换成mapper的类
@@ -32,7 +33,7 @@ class MapperUtil {
         if (msId.indexOf(".") == -1) {
             throw new RuntimeException("ms id is error");
         }
-        def className = msId.substring(0, msId.lastIndexOf("."));
+        def className = msId.substring(0, msId.lastIndexOf("."))
         //由于一个接口中的每个方法都会进行下面的操作，因此缓存
         Class<?> mapperClass = (Class<?>) CLASS_CACHE.get(className);
         if(mapperClass != null){
@@ -71,7 +72,7 @@ class MapperUtil {
         return null
     }
 
-    static Entity generateEntity(Class<?> entityClass){
+    static Entity generateEntity(String msId,Class<?> entityClass){
         def isBaseType={
             it.isPrimitive() || it in [Integer, Long, Double, Float, Short, Byte, Character, Boolean,String]
         }
@@ -91,9 +92,10 @@ class MapperUtil {
                     String name=column?(column.name()?:it.name):it.name
                     EntityColumn
                             .builder()
-                            .pk(!!id)
+                            .pk(id!=null)
                             .property(it.name)
                             .column(name)
+                            .javaType(it.type)
                             .updateable(column?column.updatable():true)
                             .build()
                 }
@@ -102,8 +104,23 @@ class MapperUtil {
                 entity.pkColumn=columns.find {it.pk}
             }
         }
+        entityObjectMap.put(msId,entity)
         return entity
     }
+
+    static String generateSql(Entity entity,String type){
+        String sql=switch (type){
+            case SqlMethods.selectByPrimaryKey -> SqlMethods.genSelectByPrimaryKey(entity)
+            case SqlMethods.deleteByPrimaryKey -> SqlMethods.genDeleteByPrimaryKey(entity)
+            case SqlMethods.updateByPrimaryKeySelective -> SqlMethods.genUpdateByPrimaryKeySelective(entity)
+            case SqlMethods.insertSelective-> SqlMethods.genInsertSelective(entity)
+        }
+        assert sql!=""
+        return sql
+    }
+
+
+
 
 
 
