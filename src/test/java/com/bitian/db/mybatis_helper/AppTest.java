@@ -1,10 +1,13 @@
 package com.bitian.db.mybatis_helper;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import com.bitian.db.mybatis.MybatisInject;
+import com.bitian.db.mybatis_helper.entity.SysUser;
+import com.bitian.db.mybatis_helper.mapper.TestMapper;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.ibatis.builder.xml.XMLConfigBuilder;
 import org.apache.ibatis.mapping.Environment;
@@ -19,7 +22,11 @@ import org.junit.Test;
 import junit.framework.TestCase;
 
 public class AppTest extends TestCase {
-	
+
+	static {
+		MybatisInject.init();
+	}
+
 	@Test
     public void test1( ) {
     	BasicDataSource ds=new BasicDataSource();
@@ -34,6 +41,7 @@ public class AppTest extends TestCase {
     	System.out.println(c.isMapUnderscoreToCamelCase());
     	System.out.println(c.getParameterMapNames().size());
     	System.out.println(c.getMappedStatementNames().size());
+		System.out.println(Arrays.stream(c.getClass().getMethods()).map(t->t.getName()).collect(Collectors.toList()));
     	c.setEnvironment(en);
     	SqlSessionFactory factory=new SqlSessionFactoryBuilder().build(c);
     	SqlSession session=factory.openSession();
@@ -46,8 +54,9 @@ public class AppTest extends TestCase {
 //		session.commit();
 //		session=factory.openSession();
 //    	PageHelper.startPage(1, 20);
-    	List<Map<String, Object>> list=session.getMapper(TestMapper.class).select(0,"12");
-    	System.out.println(list);
+//    	List<Map<String, Object>> list=session.getMapper(TestMapper.class).select(0,"12");
+//    	System.out.println(list);
+		SysUser su=session.getMapper(TestMapper.class).selectByPrimaryKey(1);
 //		TestDto dto=new TestDto();
 //		dto.setId(1L);
 //		dto.setAbc("abc123");

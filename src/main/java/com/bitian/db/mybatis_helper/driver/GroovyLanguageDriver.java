@@ -1,6 +1,7 @@
 package com.bitian.db.mybatis_helper.driver;
 
 import com.bitian.common.exception.CustomException;
+import com.bitian.db.mybatis.MybatisInject;
 import com.bitian.db.mybatis_helper.script.GroovySqlSource;
 import org.apache.ibatis.executor.parameter.ParameterHandler;
 import org.apache.ibatis.mapping.BoundSql;

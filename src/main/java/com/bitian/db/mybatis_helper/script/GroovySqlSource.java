@@ -1,9 +1,12 @@
 package com.bitian.db.mybatis_helper.script;
 
 import com.bitian.db.mybatis.constants.Constant;
+import com.bitian.db.mybatis.dto.Entity;
+import com.bitian.db.mybatis.utils.MapperUtil;
 import com.bitian.db.mybatis_helper.util.ContextMap;
 import org.apache.ibatis.builder.SqlSourceBuilder;
 import org.apache.ibatis.mapping.BoundSql;
+import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.scripting.xmltags.DynamicContext;
@@ -36,6 +39,9 @@ public class GroovySqlSource implements SqlSource {
 
     @Override
     public BoundSql getBoundSql(Object parameterObject) {
+        MappedStatement statement=configuration.getMappedStatements().stream().filter(t->t.getSqlSource()==this).findFirst().get();
+        Class entityClass=MapperUtil.getEntityClass(statement);
+        Entity entity=MapperUtil.generateEntity(entityClass);
         ContextMap bindings;
         if (parameterObject != null && !(parameterObject instanceof Map)) {
             MetaObject metaObject = configuration.newMetaObject(parameterObject);
