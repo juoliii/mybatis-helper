@@ -27,7 +27,6 @@ import com.bitian.db.mybatis_helper.dialect.BtDialect;
 import com.bitian.db.mybatis_helper.dialect.MySQLDialect;
 import com.bitian.db.mybatis_helper.util.ReflectUtil;
 
-@Slf4j
 @Intercepts({ @Signature(type = StatementHandler.class, method = "query", args = { Statement.class,ResultHandler.class }) })
 public class BitianInterceptor extends PageHelper implements Interceptor {
 	
