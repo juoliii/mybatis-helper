@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.executor.parameter.ParameterHandler;
 import org.apache.ibatis.executor.statement.RoutingStatementHandler;
 import org.apache.ibatis.executor.statement.StatementHandler;
@@ -26,6 +27,7 @@ import com.bitian.db.mybatis_helper.dialect.BtDialect;
 import com.bitian.db.mybatis_helper.dialect.MySQLDialect;
 import com.bitian.db.mybatis_helper.util.ReflectUtil;
 
+@Slf4j
 @Intercepts({ @Signature(type = StatementHandler.class, method = "query", args = { Statement.class,ResultHandler.class }) })
 public class BitianInterceptor extends PageHelper implements Interceptor {
 	
@@ -41,14 +43,13 @@ public class BitianInterceptor extends PageHelper implements Interceptor {
 			String sql = boundSql.getSql();
 			// 查询sql
 			Page page=PageHelper.getCurrentPage();
-			System.out.println(invocation.getArgs()[0]);
 			if (isQuery(sql) && page!=null) {
 				MappedStatement mst=(MappedStatement) ReflectUtil.getFieldValueForMappedStatement(statementHandler);
 				Statement statement = (Statement) invocation.getArgs()[0];
 				setTotalRecord(mst, boundSql, statement.getConnection());
 				sql=dialect.pageSql(sql,page);
 				ReflectUtil.setFieldValue(boundSql, "sql", sql);
-				System.out.println(sql);
+
 			}
 		}
 		return invocation.proceed();

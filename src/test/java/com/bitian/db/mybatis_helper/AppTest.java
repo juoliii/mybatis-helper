@@ -67,8 +67,8 @@ public class AppTest extends TestCase {
 	public static void main(String[] args) {
 		BasicDataSource ds=new BasicDataSource();
 		ds.setUsername("root");
-		ds.setPassword("1qaz2wsx");
-		ds.setUrl("jdbc:mysql://192.168.31.99:3306/caika?useUnicode=true&characterEncoding=utf8");
+		ds.setPassword("asdf-123");
+		ds.setUrl("jdbc:mysql://192.168.20.14:3306/test_groovy?useUnicode=true&characterEncoding=utf8");
 		ds.setDriverClassName("com.mysql.jdbc.Driver");
 		TransactionFactory f=new JdbcTransactionFactory();
 		Environment en=new Environment("weffe", f, ds);
@@ -80,12 +80,12 @@ public class AppTest extends TestCase {
 		c.setEnvironment(en);
 		SqlSessionFactory factory=new SqlSessionFactoryBuilder().build(c);
 		SqlSession session=factory.openSession(true);
-		SysUser su=new SysUser();
-		su.setNickname("fwefwef11");
-		su.setUsername("fwefwefffeeff");
-		su.setPassword("ffwefwefgergrg0988");
-		int n=session.getMapper(TestMapper.class).insertSelective(su);
-		System.out.println(n+"===="+su.getId());
+//		SysUser su=new SysUser();
+//		su.setNickname("fwefwef11");
+//		su.setUsername("fwefwefffeeff");
+//		su.setPassword("ffwefwefgergrg0988");
+//		int n=session.getMapper(TestMapper.class).insertSelective(su);
+//		System.out.println(n+"===="+su.getId());
 	}
 
 }

@@ -10,6 +10,8 @@ class SqlMethods {
     public static final String updateByPrimaryKeySelective="updateByPrimaryKeySelective"
     public static final String insertSelective="insertSelective"
 
+    public static List<String> methods=[selectByPrimaryKey,deleteByPrimaryKey,updateByPrimaryKeySelective,insertSelective]
+
     static String genSelectByPrimaryKey(Entity entity){
         if(entity.pkColumn==null){
             throw new CustomException("require primary key column")

@@ -2,6 +2,8 @@ package com.bitian.db.mybatis.dto
 
 import groovy.transform.builder.Builder
 
+import javax.persistence.GeneratedValue
+
 /**
  * @author admin
  */
@@ -12,4 +14,5 @@ class EntityColumn {
     boolean updateable
     boolean pk
     Class<?> javaType
+    GeneratedValue generatedValue
 }

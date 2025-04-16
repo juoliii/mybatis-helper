@@ -1,15 +1,11 @@
 package com.bitian.db.mybatis.utils
 
-
 import com.bitian.db.mybatis.dto.Entity
 import com.bitian.db.mybatis.dto.EntityColumn
-import com.bitian.db.mybatis_helper.mp.BTMapper
+import com.bitian.db.mybatis.mp.BTMapper
 import org.apache.ibatis.mapping.MappedStatement
 
-import javax.persistence.Column
-import javax.persistence.Id
-import javax.persistence.Table
-import javax.persistence.Transient
+import javax.persistence.*
 import java.lang.reflect.Modifier
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
@@ -19,8 +15,7 @@ import java.lang.reflect.Type
  */
 class MapperUtil {
 
-    static final Map<String,Class<?>> CLASS_CACHE = new LinkedHashMap<>()
-
+    static final Map<String,Class<?>> mapClassMap = new LinkedHashMap<>()
     static final Map<String,Class<?>> entityClassMap = new LinkedHashMap<>()
     static final Map<String,Entity> entityObjectMap = new LinkedHashMap<>()
 
@@ -35,13 +30,12 @@ class MapperUtil {
         }
         def className = msId.substring(0, msId.lastIndexOf("."))
         //由于一个接口中的每个方法都会进行下面的操作，因此缓存
-        Class<?> mapperClass = (Class<?>) CLASS_CACHE.get(className);
+        Class<?> mapperClass = mapClassMap.get(className)
         if(mapperClass != null){
-            return mapperClass;
+            return mapperClass
         }
-
         mapperClass = Class.forName(className)
-        CLASS_CACHE.put(className, mapperClass);
+        mapClassMap.put(className, mapperClass);
         return mapperClass;
     }
 
@@ -72,7 +66,13 @@ class MapperUtil {
         return null
     }
 
-    static Entity generateEntity(String msId,Class<?> entityClass){
+    /**
+     * 生成entity类信息
+     * @param msId
+     * @param entityClass
+     * @return
+     */
+    static Entity generateEntity(MappedStatement ms,Class<?> entityClass){
         def isBaseType={
             it.isPrimitive() || it in [Integer, Long, Double, Float, Short, Byte, Character, Boolean,String]
         }
@@ -88,11 +88,12 @@ class MapperUtil {
                     !Modifier.isStatic(it.modifiers) && !Modifier.isTransient(it.getModifiers()) && tt==null && isBaseType(it.type)
                 }.collect{
                     Column column = it.getAnnotation(Column.class)
+                    GeneratedValue generatedValue = it.getAnnotation(GeneratedValue.class)
                     Id id = it.getAnnotation(Id.class)
                     String name=column?(column.name()?:it.name):it.name
-                    EntityColumn
-                            .builder()
+                    EntityColumn.builder()
                             .pk(id!=null)
+                            .generatedValue(generatedValue)
                             .property(it.name)
                             .column(name)
                             .javaType(it.type)
@@ -102,12 +103,23 @@ class MapperUtil {
                 entity.columns=columns
                 // 目前只支持单主键模式
                 entity.pkColumn=columns.find {it.pk}
+                if(entity.pkColumn){
+                    // 此处目前只支持useGeneratedKeys 设置 主键值，后续支持selectkey方式
+                    ms.metaClass.setProperty(ms,"keyProperties",[entity.pkColumn.property] as String[])
+                    ms.metaClass.setProperty(ms,"keyColumns",[entity.pkColumn.column] as String[])
+                }
             }
         }
-        entityObjectMap.put(msId,entity)
+        entityObjectMap.put(ms.getId(),entity)
         return entity
     }
 
+    /**
+     * 生成动态sql
+     * @param entity
+     * @param type
+     * @return
+     */
     static String generateSql(Entity entity,String type){
         String sql=switch (type){
             case SqlMethods.selectByPrimaryKey -> SqlMethods.genSelectByPrimaryKey(entity)
@@ -118,10 +130,5 @@ class MapperUtil {
         assert sql!=""
         return sql
     }
-
-
-
-
-
 
 }

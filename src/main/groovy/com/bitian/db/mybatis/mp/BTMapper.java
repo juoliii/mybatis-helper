@@ -1,4 +1,4 @@
-package com.bitian.db.mybatis_helper.mp;
+package com.bitian.db.mybatis.mp;
 
 import com.bitian.db.mybatis.utils.SqlMethods;
 import com.bitian.db.mybatis_helper.driver.GroovyLanguageDriver;
@@ -9,21 +9,21 @@ import org.apache.ibatis.annotations.*;
  */
 public interface BTMapper<T> {
 
-    @Select(SqlMethods.selectByPrimaryKey)
+    @Select("")
     @Lang(GroovyLanguageDriver.class)
     T selectByPrimaryKey(Object id);
 
-    @Delete(SqlMethods.deleteByPrimaryKey)
+    @Delete("")
     @Lang(GroovyLanguageDriver.class)
     int deleteByPrimaryKey(Object id);
 
-    @Update(SqlMethods.updateByPrimaryKeySelective)
+    @Update("")
     @Lang(GroovyLanguageDriver.class)
     int updateByPrimaryKeySelective(T entity);
 
-    @Insert(SqlMethods.insertSelective)
+    @Insert("")
     @Lang(GroovyLanguageDriver.class)
-    @Options(useGeneratedKeys = true,keyProperty = "id")
+    @Options(useGeneratedKeys = true)
     int insertSelective(T entity);
 
 

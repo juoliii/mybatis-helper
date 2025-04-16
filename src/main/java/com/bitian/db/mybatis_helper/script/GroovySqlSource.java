@@ -3,7 +3,9 @@ package com.bitian.db.mybatis_helper.script;
 import com.bitian.db.mybatis.constants.Constant;
 import com.bitian.db.mybatis.dto.Entity;
 import com.bitian.db.mybatis.utils.MapperUtil;
+import com.bitian.db.mybatis.utils.SqlMethods;
 import com.bitian.db.mybatis_helper.util.ContextMap;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.builder.SqlSourceBuilder;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
@@ -48,15 +50,19 @@ public class GroovySqlSource implements SqlSource {
 
     @Override
     public BoundSql getBoundSql(Object parameterObject) {
-        //获取sqlSource对应的mappedStatement
-        if(statement==null){
+        //BTMapper自动注入的单表方法会在此处第一次调用方法的时候进行初始化
+        if(StringUtils.isEmpty(this.originSql) && statement==null){
+            //获取sqlSource对应的mappedStatement
             statement=configuration.getMappedStatements().stream().filter(t->t.getSqlSource()==this).findFirst().get();
             Class<?> entityClass=MapperUtil.getEntityClass(statement);
             if(entityClass!=null){
-                Entity entity=MapperUtil.generateEntity(statement.getId(),entityClass);
-                //匹配上BTMapper中的方法
-                if(statement.getId().endsWith(this.originSql)){
-                    this.init(MapperUtil.generateSql(entity,this.originSql));
+                Entity entity=MapperUtil.generateEntity(statement,entityClass);
+                String msId=statement.getId();
+                String methodName=msId.substring(msId.lastIndexOf(".")+1);
+                //匹配上BTMapper中的方法；originSql值为空，并且是指定的方法名才能匹配
+                if(StringUtils.isEmpty(this.originSql) && SqlMethods.methods.contains(methodName)){
+                    //第一次调用自动生成的方法的时候修改sqlsource，会比较慢，后续会很快
+                    this.init(MapperUtil.generateSql(entity,methodName));
                 }
             }
         }
