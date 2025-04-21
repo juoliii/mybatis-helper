@@ -41,7 +41,6 @@ class BTPaginationInterceptor implements Interceptor{
     Object intercept(Invocation invocation) throws Throwable {
         // 必须是继承自BaseStatementHandler才执行分页逻辑
         if (invocation.getTarget() instanceof RoutingStatementHandler) {
-            long start=System.currentTimeMillis()
             Statement statement = invocation.getArgs()[0] as Statement
             BaseStatementHandler handler=invocation.target.getProperties().get("delegate") as BaseStatementHandler
             def param= handler.parameterHandler.parameterObject
@@ -62,16 +61,14 @@ class BTPaginationInterceptor implements Interceptor{
                 Statement stmt = handler.prepare(statement.connection, mappedStatement.timeout)
                 handler.parameterize(stmt)
                 invocation.getArgs()[0]=stmt
-                println "take=${System.currentTimeMillis()-start}"
             }
         }
         return invocation.proceed()
     }
 
     private long count(MappedStatement mappedStatement, BoundSql boundSql, PaginationDialect dialect,BaseForm form,Statement statement) {
-        String sql = boundSql.getSql();
         // 通过查询Sql语句获取到对应的计算总记录数的sql语句
-        String countSql = dialect.countSql(sql,form)
+        String countSql = dialect.countSql(boundSql.getSql(),form)
         BoundSql countBoundSql = new BoundSql(mappedStatement.getConfiguration(), countSql, boundSql.getParameterMappings(), boundSql.getParameterObject())
         boundSql.additionalParameters.forEach((k,v)->countBoundSql.setAdditionalParameter(k.toString(),v))
         ParameterHandler parameterHandler = new DefaultParameterHandler(mappedStatement, boundSql.getParameterObject(), countBoundSql)
