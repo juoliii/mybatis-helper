@@ -7,6 +7,7 @@ import com.bitian.common.dto.BaseForm;
  */
 
 public class TestDto extends BaseForm {
+    public static String test="fewf"+"";
     String abc;
 
     public String getAbc(){

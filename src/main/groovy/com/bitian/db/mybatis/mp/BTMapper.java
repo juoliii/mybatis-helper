@@ -1,6 +1,5 @@
 package com.bitian.db.mybatis.mp;
 
-import com.bitian.db.mybatis.utils.SqlMethods;
 import com.bitian.db.mybatis_helper.driver.GroovyLanguageDriver;
 import org.apache.ibatis.annotations.*;
 

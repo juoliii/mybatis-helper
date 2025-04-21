@@ -256,8 +256,8 @@ public class SimpleTemplateEngine {
             while ((c = reader.read()) != -1) {
                 if (c == '#') {
                     reader.mark(1);
-                    c = reader.read();
-                    if (c == '{') {
+                    int tmp = reader.read();
+                    if (tmp == '{') {
                         n++;
                         reader.reset();
                     }

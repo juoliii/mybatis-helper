@@ -1,13 +1,9 @@
 package com.bitian.db.mybatis_helper;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import com.bitian.db.mybatis.MybatisInject;
+import com.bitian.common.dto.BaseForm;
 import com.bitian.db.mybatis_helper.entity.SysUser;
 import com.bitian.db.mybatis_helper.mapper.TestMapper;
+import junit.framework.TestCase;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.ibatis.builder.xml.XMLConfigBuilder;
 import org.apache.ibatis.mapping.Environment;
@@ -19,7 +15,7 @@ import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.Test;
 
-import junit.framework.TestCase;
+import java.sql.SQLException;
 
 public class AppTest extends TestCase {
 
@@ -33,7 +29,7 @@ public class AppTest extends TestCase {
     	ds.setDriverClassName("com.mysql.jdbc.Driver");
     	TransactionFactory f=new JdbcTransactionFactory();
     	Environment en=new Environment("weffe", f, ds);
-    	XMLConfigBuilder builder=new XMLConfigBuilder(PageHelper.class.getClassLoader().getResourceAsStream("mybatis-config.xml"));
+    	XMLConfigBuilder builder=new XMLConfigBuilder(AppTest.class.getClassLoader().getResourceAsStream("mybatis-config.xml"));
     	Configuration c=builder.parse();
     	System.out.println(c.isMapUnderscoreToCamelCase());
     	System.out.println(c.getParameterMapNames().size());
@@ -64,7 +60,7 @@ public class AppTest extends TestCase {
 //    	session.close();
     }
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws SQLException, InterruptedException {
 		BasicDataSource ds=new BasicDataSource();
 		ds.setUsername("root");
 		ds.setPassword("asdf-123");
@@ -72,18 +68,25 @@ public class AppTest extends TestCase {
 		ds.setDriverClassName("com.mysql.jdbc.Driver");
 		TransactionFactory f=new JdbcTransactionFactory();
 		Environment en=new Environment("weffe", f, ds);
-		XMLConfigBuilder builder=new XMLConfigBuilder(PageHelper.class.getClassLoader().getResourceAsStream("mybatis-config.xml"));
+		XMLConfigBuilder builder=new XMLConfigBuilder(AppTest.class.getClassLoader().getResourceAsStream("mybatis-config.xml"));
 		Configuration c=builder.parse();
-		System.out.println(c.isMapUnderscoreToCamelCase());
-		System.out.println(c.getParameterMapNames().size());
-		System.out.println(c.getMappedStatementNames().size());
 		c.setEnvironment(en);
 		SqlSessionFactory factory=new SqlSessionFactoryBuilder().build(c);
 		SqlSession session=factory.openSession(true);
+		TestMapper testMapper=session.getMapper(TestMapper.class);
+//		session.getMapper(TestMapper.class).select(1,"12",new BaseForm());
+		BaseForm form=BaseForm.br().pn(1).ps(5).build();
+		System.out.println(testMapper.selectPage(form).size());
+		Thread.sleep(3000);
+		SqlSession session1=factory.openSession(true);
+		TestMapper testMapper1=session1.getMapper(TestMapper.class);
+		System.out.println(testMapper1.select(1,"",BaseForm.br().pn(1).ps(10).build()));
+//		testMapper.select(1,"fe",BaseForm.br().pn(1).ps(5).build());
 //		SysUser su=new SysUser();
-//		su.setNickname("fwefwef11");
+//		su.setNickname("ewewe");
 //		su.setUsername("fwefwefffeeff");
 //		su.setPassword("ffwefwefgergrg0988");
+//		su.setTest(SysUser.TestEnum.run);
 //		int n=session.getMapper(TestMapper.class).insertSelective(su);
 //		System.out.println(n+"===="+su.getId());
 	}

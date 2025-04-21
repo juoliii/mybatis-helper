@@ -6,10 +6,10 @@
 		<setting name="mapUnderscoreToCamelCase" value="true"/>
 	</settings>
 	<typeAliases>
-		<package name="com.bitian"/>
+		<package name="com.bitian.db.mybatis_helper.entity"/>
 	</typeAliases>
 	<plugins>
-		<plugin interceptor="com.bitian.db.mybatis_helper.plugins.BitianInterceptor">
+		<plugin interceptor="com.bitian.db.mybatis.plugins.BTPaginationInterceptor">
 			<property name="dialect" value="mysql"/>
 		</plugin>
 	</plugins>

@@ -18,4 +18,9 @@ public class SysUser {
     private String username;
     private String password;
     private String nickname;
+    private TestEnum test;
+
+    public enum TestEnum{
+        submit,run
+    }
 }

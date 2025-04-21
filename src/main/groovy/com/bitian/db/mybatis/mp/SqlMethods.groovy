@@ -1,4 +1,4 @@
-package com.bitian.db.mybatis.utils
+package com.bitian.db.mybatis.mp
 
 import com.bitian.common.exception.CustomException
 import com.bitian.db.mybatis.dto.Entity

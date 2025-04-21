@@ -3,7 +3,11 @@ package com.bitian.db.mybatis.utils
 import com.bitian.db.mybatis.dto.Entity
 import com.bitian.db.mybatis.dto.EntityColumn
 import com.bitian.db.mybatis.mp.BTMapper
+import com.bitian.db.mybatis.mp.SqlMethods
+import com.bitian.db.mybatis.pagination.Constants
 import org.apache.ibatis.mapping.MappedStatement
+import org.apache.ibatis.mapping.ResultMap
+import org.apache.ibatis.session.Configuration
 
 import javax.persistence.*
 import java.lang.reflect.Modifier
@@ -74,7 +78,7 @@ class MapperUtil {
      */
     static Entity generateEntity(MappedStatement ms,Class<?> entityClass){
         def isBaseType={
-            it.isPrimitive() || it in [Integer, Long, Double, Float, Short, Byte, Character, Boolean,String]
+            it.isPrimitive() || it.isEnum() || it in [Integer, Long, Double, Float, Short, Byte, Character, Boolean,String]
         }
         Entity entity = null;
         if (entityClass.isAnnotationPresent(Table.class)) {
@@ -129,6 +133,23 @@ class MapperUtil {
         }
         assert sql!=""
         return sql
+    }
+
+    static MappedStatement buildPaginationCountMappedStatement(MappedStatement ms) {
+        String countId = ms.getId() + Constants.COUNT_MS_SUFFIX
+        Configuration configuration = ms.getConfiguration()
+        MappedStatement.Builder builder = new MappedStatement.Builder(configuration, countId, ms.getSqlSource(), ms.getSqlCommandType())
+        builder.resource(ms.getResource())
+        builder.fetchSize(ms.getFetchSize())
+        builder.statementType(ms.getStatementType())
+        builder.timeout(ms.getTimeout())
+        builder.parameterMap(ms.getParameterMap());
+        builder.resultMaps(Collections.singletonList(new ResultMap.Builder(configuration, ms.getId(), Long.class, Collections.emptyList()).build()))
+        builder.resultSetType(ms.getResultSetType())
+        builder.cache(ms.getCache())
+        builder.flushCacheRequired(ms.isFlushCacheRequired())
+        builder.useCache(ms.isUseCache())
+        builder.build()
     }
 
 }
