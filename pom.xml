@@ -41,7 +41,7 @@
         <dependency>
             <groupId>io.github.juoliii</groupId>
             <artifactId>common</artifactId>
-            <version>0.2.8</version>
+            <version>0.2.9</version>
         </dependency>
 
         <dependency>

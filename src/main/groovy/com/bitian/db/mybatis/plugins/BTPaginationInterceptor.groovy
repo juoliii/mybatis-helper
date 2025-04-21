@@ -7,7 +7,6 @@ import com.bitian.db.mybatis.pagination.dialect.PaginationDialect
 import com.bitian.db.mybatis.utils.DatabaseUtil
 import com.bitian.db.mybatis.utils.MybatisUtil
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
 import org.apache.ibatis.executor.parameter.ParameterHandler
 import org.apache.ibatis.executor.statement.BaseStatementHandler
 import org.apache.ibatis.executor.statement.RoutingStatementHandler
@@ -21,7 +20,6 @@ import org.apache.ibatis.plugin.Signature
 import org.apache.ibatis.scripting.defaults.DefaultParameterHandler
 import org.apache.ibatis.session.ResultHandler
 
-import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.SQLException
@@ -46,7 +44,7 @@ class BTPaginationInterceptor implements Interceptor{
             def param= handler.parameterHandler.parameterObject
             BaseForm form= MybatisUtil.getBaseForm(param)
             //只有mapper的参数中有BaseForm类型才会执行分页
-            if(form && form.pn>0 && form.ps>0){
+            if(form && form.pagination && form.pn>0 && form.ps>0){
                 MappedStatement mappedStatement=handler.getProperties().get("mappedStatement") as MappedStatement
                 BoundSql boundSql = handler.getBoundSql()
                 PaginationDialect dialect=PaginationDialect.dialect(DatabaseUtil.parseDb(statement.connection.metaData.URL))
