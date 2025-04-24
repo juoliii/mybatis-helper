@@ -9,7 +9,6 @@ import groovy.transform.NamedParam
 class MybatisInject {
 
     def static sql(@NamedParam def key, @NamedParam String field){
-        def parameters = this.class.methods.find {it.name=="sql"}.parameters
         key?field:""
     }
 

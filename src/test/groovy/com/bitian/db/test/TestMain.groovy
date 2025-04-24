@@ -13,6 +13,8 @@ import org.apache.ibatis.session.SqlSessionFactoryBuilder
 import org.apache.ibatis.transaction.TransactionFactory
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory
 
+import static com.bitian.db.mybatis.MybatisInject.*
+
 /**
  * @author admin
  */
@@ -31,20 +33,22 @@ class TestMain {
         c.environment=env
         SqlSessionFactory factory=new SqlSessionFactoryBuilder().build(c);
         SqlSession session=factory.openSession(true)
-        println session.getMapper(TestMapper.class).selectByPrimaryKey(17)
+        println session.getMapper(TestMapper.class).select1(1,[])
     }
 
     static void main(String[] args) {
-        String sql="""
-        select u.*,(select name from users_name where id=u.id) from user u left join roles r on r.id=u.rid
-        where u.name='wef' and r.name='wef' and exists(select 1 from user_role ur where ur.uid=u.id)
-        --group by u.id
-        order by r.id ,?
-"""
-        PlainSelect select=CCJSqlParserUtil.parse(sql)
-        if(select.orderByElements)
-            println select.orderByElements.count {it.expression.toString().contains("?")}
-        println select.orderByElements
+//        String sql="""
+//        select u.*,(select name from users_name where id=u.id) from user u left join roles r on r.id=u.rid
+//        where u.name='wef' and r.name='wef' and exists(select 1 from user_role ur where ur.uid=u.id)
+//        --group by u.id
+//        order by r.id ,?
+//"""
+//        PlainSelect select=CCJSqlParserUtil.parse(sql)
+//        if(select.orderByElements)
+//            println select.orderByElements.count {it.expression.toString().contains("?")}
+//        println select.orderByElements
+
+        query()
 
     }
 }

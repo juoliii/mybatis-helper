@@ -1,10 +1,10 @@
 package com.bitian.db.mybatis_helper.script;
 
 import com.bitian.db.mybatis.constants.Constant;
+import com.bitian.db.mybatis.dto.ContextMap;
 import com.bitian.db.mybatis.dto.Entity;
-import com.bitian.db.mybatis.utils.MapperUtil;
 import com.bitian.db.mybatis.mp.SqlMethods;
-import com.bitian.db.mybatis_helper.util.ContextMap;
+import com.bitian.db.mybatis.utils.MapperUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.builder.SqlSourceBuilder;
 import org.apache.ibatis.mapping.BoundSql;

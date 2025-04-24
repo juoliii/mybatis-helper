@@ -20,6 +20,10 @@ public interface TestMapper extends BTMapper<SysUser> {
 	@Lang(GroovyLanguageDriver.class)
 	List<SysUser> select(int id, String test, BaseForm form);
 
+	@Select("select * from sys_user <% this.testkey=1L; %> ${ sql(id,'where id=#{testkey}' ) } ")
+	@Lang(GroovyLanguageDriver.class)
+	List<SysUser> select1(long id,List list);
+
 	@Select("select * from sys_user <% this.testkey=1; %>  ")
 	@Lang(GroovyLanguageDriver.class)
 	List<SysUser> selectPage(BaseForm form);
