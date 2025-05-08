@@ -53,7 +53,13 @@ public class GroovySqlSource implements SqlSource {
         //BTMapper自动注入的单表方法会在此处第一次调用方法的时候进行初始化
         if(StringUtils.isEmpty(this.originSql) && statement==null){
             //获取sqlSource对应的mappedStatement
-            statement=configuration.getMappedStatements().stream().filter(t->t.getSqlSource()==this).findFirst().get();
+//            statement=configuration.getMappedStatements().stream().filter(t->t instanceof MappedStatement).filter(t->t.getSqlSource()==this).findFirst().get();
+            for (Object tmp : configuration.getMappedStatements()) {
+                if(tmp instanceof MappedStatement && ((MappedStatement)tmp).getSqlSource()==this){
+                    statement= (MappedStatement) tmp;
+                    break;
+                }
+            }
             Class<?> entityClass=MapperUtil.getEntityClass(statement);
             if(entityClass!=null){
                 Entity entity=MapperUtil.generateEntity(statement,entityClass);

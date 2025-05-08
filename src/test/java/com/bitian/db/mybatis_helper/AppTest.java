@@ -31,9 +31,6 @@ public class AppTest extends TestCase {
     	Environment en=new Environment("weffe", f, ds);
     	XMLConfigBuilder builder=new XMLConfigBuilder(AppTest.class.getClassLoader().getResourceAsStream("mybatis-config.xml"));
     	Configuration c=builder.parse();
-    	System.out.println(c.isMapUnderscoreToCamelCase());
-    	System.out.println(c.getParameterMapNames().size());
-    	System.out.println(c.getMappedStatementNames().size());
     	c.setEnvironment(en);
     	SqlSessionFactory factory=new SqlSessionFactoryBuilder().build(c);
     	SqlSession session=factory.openSession();
