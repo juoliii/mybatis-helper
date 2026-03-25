@@ -1,5 +1,4 @@
 package com.bitian.db.mybatis_helper;
-import tk.mybatis.mapper.entity.EntityHelper;
 import tk.mybatis.mapper.entity.EntityColumn;
 import java.util.Set;
 
