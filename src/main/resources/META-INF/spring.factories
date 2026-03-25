@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.bitian.db.mybatis_helper.spring.DbUtilAutoConfiguration
