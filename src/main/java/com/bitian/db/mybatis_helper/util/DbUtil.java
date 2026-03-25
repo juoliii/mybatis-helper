@@ -8,6 +8,7 @@ import org.apache.ibatis.scripting.LanguageDriver;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.mybatis.spring.SqlSessionUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,20 +20,24 @@ import java.util.function.Function;
 public class DbUtil {
 
     private static SqlSessionFactory sqlSessionFactory;
-    private static SqlSession sqlSessionTemplate;
+
+    private static boolean isInSpring=false;
+
+    public static boolean isSpringPresent() {
+        try {
+            Class.forName("org.springframework.context.ApplicationContext");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
 
     public static void init(SqlSessionFactory factory) {
         sqlSessionFactory = factory;
         initConfiguration(factory.getConfiguration());
+        isInSpring=isSpringPresent();
     }
 
-    /**
-     * 用于 Spring 环境下注入 SqlSessionTemplate，从而支持 @Transactional 事务
-     */
-    public static void init(SqlSession sqlSession) {
-        sqlSessionTemplate = sqlSession;
-        initConfiguration(sqlSession.getConfiguration());
-    }
 
     private static void initConfiguration(Configuration configuration) {
         if (!configuration.hasMapper(DbMapper.class)) {
@@ -48,11 +53,15 @@ public class DbUtil {
      * 向后兼容暴露 SqlSession。如果在 Spring 环境下，则返回自动参与事务的 SqlSessionTemplate
      */
     public static SqlSession getSqlSession() {
-        if (sqlSessionTemplate != null) {
-            return sqlSessionTemplate;
-        }
-        if (sqlSessionFactory != null) {
-            return sqlSessionFactory.openSession(true);
+        if (sqlSessionFactory != null ) {
+            if(isInSpring)
+                return SqlSessionUtils.getSqlSession(
+                        sqlSessionFactory,
+                        sqlSessionFactory.getConfiguration().getDefaultExecutorType(),
+                        null
+                );
+            else
+                return sqlSessionFactory.openSession(true);
         }
         throw new RuntimeException("DbUtil is not initialized. Please call init(SqlSessionFactory) or init(SqlSession) first.");
     }
@@ -61,14 +70,15 @@ public class DbUtil {
      * 统一执行器：支持 Spring 事务与非 Spring 环境下的资源自动释放
      */
     private static <R> R execute(Function<SqlSession, R> action) {
-        if (sqlSessionTemplate != null) {
-            // Spring 环境，使用 SqlSessionTemplate，自动参与 Spring 事务。不能手动 close()
-            return action.apply(sqlSessionTemplate);
-        }
         if (sqlSessionFactory != null) {
-            // 非 Spring 环境，每次开启新 Session，并利用 try-with-resources 自动释放连接
-            try (SqlSession session = sqlSessionFactory.openSession(true)) {
+            SqlSession session=getSqlSession();
+            try {
                 return action.apply(session);
+            }finally {
+                if(isInSpring)
+                    SqlSessionUtils.closeSqlSession(session, sqlSessionFactory);
+                else
+                    session.close();
             }
         }
         throw new RuntimeException("DbUtil is not initialized. Please call init(SqlSessionFactory) or init(SqlSession) first.");
