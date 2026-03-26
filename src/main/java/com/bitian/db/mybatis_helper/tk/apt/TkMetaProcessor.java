@@ -76,6 +76,9 @@ public class TkMetaProcessor extends AbstractProcessor {
             writer.write(" */\n");
             writer.write("public class " + qClassName + " extends TkTable {\n\n");
 
+            String staticFieldName = sanitizeFieldName(tableName).toUpperCase();
+            writer.write("    public static final " + qClassName + " " + staticFieldName + " = new " + qClassName + "(\"" + tableName + "\");\n\n");
+
             writer.write("    public " + qClassName + "(String alias) {\n");
             writer.write("        super(\"" + tableName + "\", alias);\n");
             writer.write("    }\n\n");
