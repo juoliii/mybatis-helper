@@ -95,6 +95,33 @@ List<Map<String, Object>> list = DbUtil.selectList(sb);
 List<SysUser> users = DbUtil.selectList(sb, SysUser.class);
 ```
 
+### 编译期强类型 SQL DSL (APT 自动生成元模型)
+
+除了灵活的原生字符串拼接外，`SelectBuilder` 现在更**原生支持高度类型安全的强类型元模型模式**，让它完全可以媲美 QueryDSL/jOOQ 等顶尖强类型框架！
+
+本项目内建了 Annotation Processor (APT)。在编译期，它会自动拦截 `tk.mybatis` 等框架常用的 `@Table` 注解，为您零配置自动生成基于 `Q` 打头的增强表描述元模型（例如 `QSysUser.java`）。您无需担心拼错数据库列名或者缺乏代码格式重构支持：
+
+```java
+// 使用编译自动生成的 QSysUser（内部已包含所有列定义的强类型常量）
+QSysUser u = new QSysUser("u");
+QSysDept d = new QSysDept("d");
+
+SelectBuilder sb = new SelectBuilder()
+    // 独占特性的 u.all 可将自身包含的所有列一网打尽，无需手写 u.*，且支持混用 d.name.as("别名")
+    .select(u.all) 
+    .select(d.name.as("deptName"))
+    .from(u)
+    // 底层智能识别类型：当两个强类型列比对时，自动生成原生列判断 sql（且不会有 ? 的预编译占位符）
+    .leftJoin(d).on(w -> w.eq(u.deptId, d.id))
+    // 若和普通数据值对比，则自动提取出防 SQL 注入的占位符模式（如 .status = #{_qw_param_X}）
+    .where(w -> w.eq(u.status, 1).like(u.username, "vip"))
+    .groupBy(u.deptId)
+    .orderByDesc(u.createTime);
+
+// 执行产出的效果和原生字符串完全一致，但您享受到了 100% 的编译期排错能力和 IDE 代码补全！
+List<Map<String, Object>> list = DbUtil.selectList(sb);
+```
+
 ### DbUtil 其它基础 API
 
 除了完整的 DSL 构建引擎，日常的普通直接查询如果不想写繁杂的配置也可以直接通过 `DbUtil` 完成：

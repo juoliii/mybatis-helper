@@ -22,6 +22,16 @@ public class TkQueryWrapper<T> extends HashMap<String, Object> {
     private final Class<T> entityClass;
     private final Map<String, String> propertyToColumnMap = new HashMap<>();
 
+    /**
+     * 静态实例化方法
+     * @param entityClass
+     * @return
+     * @param <T>
+     */
+    public static <T> TkQueryWrapper<T> n(Class<T> entityClass){
+        return new TkQueryWrapper<>(entityClass);
+    }
+
     public TkQueryWrapper(Class<T> entityClass) {
         this.entityClass = entityClass;
         initColumnMap();

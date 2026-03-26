@@ -1,5 +1,8 @@
 package com.bitian.db.mybatis_helper.util;
 
+import com.bitian.db.mybatis_helper.tk.meta.TkTable;
+import com.bitian.db.mybatis_helper.tk.meta.TkColumn;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -115,5 +118,56 @@ public class SelectBuilderTest {
         Assert.assertTrue(sql.contains("HAVING COUNT(*) > 1 OR (MAX(u.status) = #{maxStatus})"));
         Assert.assertEquals(1, params.size());
         Assert.assertEquals(2, params.get("maxStatus"));
+    }
+
+    static class MySysUser extends TkTable {
+        public final TkColumn id = createColumn("id");
+        public final TkColumn name = createColumn("name");
+        public final TkColumn status = createColumn("status");
+        public final TkColumn deptId = createColumn("dept_id");
+        public final TkColumn[] all = new TkColumn[] { id, name, status, deptId };
+        public MySysUser(String alias) { super("sys_user", alias); }
+    }
+
+    static class MySysDept extends TkTable {
+        public final TkColumn id = createColumn("id");
+        public final TkColumn name = createColumn("name");
+        public final TkColumn[] all = new TkColumn[] { id, name };
+        public MySysDept(String alias) { super("sys_dept", alias); }
+    }
+
+    @Test
+    public void testTkColumnAliasAndAll() {
+        MySysUser u = new MySysUser("u");
+        MySysDept d = new MySysDept("d");
+
+        SelectBuilder sb = new SelectBuilder()
+                .select(u.all)
+                .select(d.name.as("deptName"))
+                .from(u)
+                .leftJoin(d).on(w -> w.eq(u.deptId, d.id));
+
+        String sql = sb.toSql();
+        Assert.assertTrue(sql.contains("SELECT u.id, u.name, u.status, u.dept_id, d.name AS deptName FROM sys_user u LEFT JOIN sys_dept d ON (u.dept_id = d.id)"));
+    }
+
+    @Test
+    public void testTKSelectBuilder() {
+        MySysUser u = new MySysUser("u");
+        MySysDept d = new MySysDept("d");
+
+        SelectBuilder sb = new SelectBuilder()
+                .select(u.id, u.name, d.name)
+                .from(u)
+                .leftJoin(d).on(w -> w.eq(u.deptId, d.id))
+                .where(w -> w.eq(u.status, 1).like(u.name, "vip"));
+
+        String sql = sb.toSql();
+        Assert.assertTrue(sql.contains("SELECT u.id, u.name, d.name FROM sys_user u LEFT JOIN sys_dept d ON (u.dept_id = d.id) WHERE u.status = #{_qw_param_"));
+        Assert.assertTrue(sql.contains("AND u.name LIKE #{_qw_param_"));
+        
+        Assert.assertEquals(2, sb.getParams().size());
+        Assert.assertTrue(sb.getParams().values().contains(1));
+        Assert.assertTrue(sb.getParams().values().contains("%vip%"));
     }
 }

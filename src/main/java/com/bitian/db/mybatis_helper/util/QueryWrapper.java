@@ -1,6 +1,9 @@
 package com.bitian.db.mybatis_helper.util;
 
+import com.bitian.db.mybatis_helper.tk.meta.TkColumn;
+
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -362,6 +365,132 @@ public class QueryWrapper extends HashMap<String, Object> {
 
     public QueryWrapper notInSql(String column, SelectBuilder subBuilder) {
         return notInSql(column, subBuilder, true);
+    }
+
+    // ==========================================
+    // TkColumn 强类型元模型专属重载 (支持跨列自适应对撞运算)
+    // ==========================================
+
+    public QueryWrapper eq(TkColumn column, Object val, boolean condition) {
+        if (condition) {
+            if (val instanceof TkColumn) {
+                conditions.add(column.getSql() + " = " + ((TkColumn) val).getSql());
+            } else {
+                eq(column.getSql(), val, true);
+            }
+        }
+        return this;
+    }
+
+    public QueryWrapper eq(TkColumn column, Object val) {
+        return eq(column, val, true);
+    }
+
+    public QueryWrapper ne(TkColumn column, Object val, boolean condition) {
+        if (condition) {
+            if (val instanceof TkColumn) {
+                conditions.add(column.getSql() + " <> " + ((TkColumn) val).getSql());
+            } else {
+                ne(column.getSql(), val, true);
+            }
+        }
+        return this;
+    }
+
+    public QueryWrapper ne(TkColumn column, Object val) {
+        return ne(column, val, true);
+    }
+
+    public QueryWrapper gt(TkColumn column, Object val, boolean condition) {
+        if (condition) {
+            if (val instanceof TkColumn) {
+                conditions.add(column.getSql() + " > " + ((TkColumn) val).getSql());
+            } else {
+                gt(column.getSql(), val, true);
+            }
+        }
+        return this;
+    }
+
+    public QueryWrapper gt(TkColumn column, Object val) {
+        return gt(column, val, true);
+    }
+
+    public QueryWrapper ge(TkColumn column, Object val, boolean condition) {
+        if (condition) {
+            if (val instanceof TkColumn) {
+                conditions.add(column.getSql() + " >= " + ((TkColumn) val).getSql());
+            } else {
+                ge(column.getSql(), val, true);
+            }
+        }
+        return this;
+    }
+
+    public QueryWrapper ge(TkColumn column, Object val) {
+        return ge(column, val, true);
+    }
+
+    public QueryWrapper lt(TkColumn column, Object val, boolean condition) {
+        if (condition) {
+            if (val instanceof TkColumn) {
+                conditions.add(column.getSql() + " < " + ((TkColumn) val).getSql());
+            } else {
+                lt(column.getSql(), val, true);
+            }
+        }
+        return this;
+    }
+
+    public QueryWrapper lt(TkColumn column, Object val) {
+        return lt(column, val, true);
+    }
+
+    public QueryWrapper le(TkColumn column, Object val, boolean condition) {
+        if (condition) {
+            if (val instanceof TkColumn) {
+                conditions.add(column.getSql() + " <= " + ((TkColumn) val).getSql());
+            } else {
+                le(column.getSql(), val, true);
+            }
+        }
+        return this;
+    }
+
+    public QueryWrapper le(TkColumn column, Object val) {
+        return le(column, val, true);
+    }
+
+    public QueryWrapper like(TkColumn column, String val, boolean condition) {
+        return like(column.getSql(), val, condition);
+    }
+
+    public QueryWrapper like(TkColumn column, String val) {
+        return like(column.getSql(), val, true);
+    }
+
+    public QueryWrapper in(TkColumn column, List<?> values, boolean condition) {
+        return in(column.getSql(), values, condition);
+    }
+
+    public QueryWrapper in(TkColumn column, List<?> values) {
+        return in(column.getSql(), values, true);
+    }
+
+    public QueryWrapper isNull(TkColumn column, boolean condition) {
+        return isNull(column.getSql(), condition);
+    }
+
+    public QueryWrapper isNull(TkColumn column) {
+        return isNull(column.getSql(), true);
+    }
+
+    public QueryWrapper isNotNull(TkColumn column, boolean condition) {
+        return isNotNull(column.getSql(), condition);
+    }
+
+    public QueryWrapper isNotNull(TkColumn column) {
+        return isNotNull(column.getSql(), true);
     }
 
     // --- 获取结果 ---

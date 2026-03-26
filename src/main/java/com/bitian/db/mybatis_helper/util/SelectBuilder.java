@@ -1,5 +1,8 @@
 package com.bitian.db.mybatis_helper.util;
 
+import com.bitian.db.mybatis_helper.tk.meta.TkColumn;
+import com.bitian.db.mybatis_helper.tk.meta.TkTable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +68,16 @@ public class SelectBuilder {
     }
 
     /**
+     * 选择查询的列（强类型支持）
+     */
+    public SelectBuilder select(TkColumn... columns) {
+        for (TkColumn col : columns) {
+            selectColumns.add(col.getSelectSql());
+        }
+        return this;
+    }
+
+    /**
      * 选择一个子查询，如果设置了 alias() 则会自动带上 AS 别名
      * 例如：.select(new SelectBuilder().select("COUNT(*)").from("t").as("cnt"))
      */
@@ -83,6 +96,14 @@ public class SelectBuilder {
 
     public SelectBuilder from(String table) {
         this.fromTable = table;
+        return this;
+    }
+
+    /**
+     * 将一个强类型表模型作为 FROM 表
+     */
+    public SelectBuilder from(TkTable table) {
+        this.fromTable = table.getTableName() + " " + table.getAlias();
         return this;
     }
 
@@ -106,6 +127,10 @@ public class SelectBuilder {
         return new JoinClause(this, "LEFT JOIN", table);
     }
 
+    public JoinClause leftJoin(TkTable table) {
+        return new JoinClause(this, "LEFT JOIN", table.getTableName() + " " + table.getAlias());
+    }
+
     public JoinClause leftJoin(SelectBuilder subBuilder) {
         for (Map.Entry<String, Object> entry : subBuilder.getParams().entrySet()) {
             this.queryWrapper.put(entry.getKey(), entry.getValue());
@@ -116,6 +141,10 @@ public class SelectBuilder {
 
     public JoinClause rightJoin(String table) {
         return new JoinClause(this, "RIGHT JOIN", table);
+    }
+
+    public JoinClause rightJoin(TkTable table) {
+        return new JoinClause(this, "RIGHT JOIN", table.getTableName() + " " + table.getAlias());
     }
 
     public JoinClause rightJoin(SelectBuilder subBuilder) {
@@ -130,6 +159,10 @@ public class SelectBuilder {
         return new JoinClause(this, "INNER JOIN", table);
     }
 
+    public JoinClause innerJoin(TkTable table) {
+        return new JoinClause(this, "INNER JOIN", table.getTableName() + " " + table.getAlias());
+    }
+
     public JoinClause innerJoin(SelectBuilder subBuilder) {
         for (Map.Entry<String, Object> entry : subBuilder.getParams().entrySet()) {
             this.queryWrapper.put(entry.getKey(), entry.getValue());
@@ -140,6 +173,11 @@ public class SelectBuilder {
 
     public SelectBuilder crossJoin(String table) {
         joins.add("CROSS JOIN " + table);
+        return this;
+    }
+
+    public SelectBuilder crossJoin(TkTable table) {
+        joins.add("CROSS JOIN " + table.getTableName() + " " + table.getAlias());
         return this;
     }
 
@@ -175,6 +213,13 @@ public class SelectBuilder {
         return this;
     }
 
+    public SelectBuilder groupBy(TkColumn... columns) {
+        for (TkColumn col : columns) {
+            groupBys.add(col.getSql());
+        }
+        return this;
+    }
+
     public SelectBuilder having(String havingCondition) {
         this.havingClause = havingCondition;
         return this;
@@ -202,8 +247,18 @@ public class SelectBuilder {
         return this;
     }
 
+    public SelectBuilder orderByAsc(TkColumn column) {
+        orderBys.add(column.getSql() + " ASC");
+        return this;
+    }
+
     public SelectBuilder orderByDesc(String column) {
         orderBys.add(column + " DESC");
+        return this;
+    }
+
+    public SelectBuilder orderByDesc(TkColumn column) {
+        orderBys.add(column.getSql() + " DESC");
         return this;
     }
 
