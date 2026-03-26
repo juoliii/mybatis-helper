@@ -109,7 +109,7 @@ public class TkMetaProcessor extends AbstractProcessor {
                     colName = camelToUnderline(fieldName);
                 }
 
-                String constantFieldName = colName.toUpperCase();
+                String constantFieldName = sanitizeFieldName(colName).toUpperCase();
                 writer.write("    public final TkColumn " + constantFieldName + " = createColumn(\"" + colName + "\");\n");
                 fieldNames.add(constantFieldName);
             }
@@ -168,6 +168,12 @@ public class TkMetaProcessor extends AbstractProcessor {
             }
         }
         return null;
+    }
+
+    private String sanitizeFieldName(String colName) {
+        if (colName == null) return "";
+        // 移除数据库转义符：反引号、方括号、双引号等
+        return colName.replaceAll("[`\\[\\]\"\\s]", "");
     }
 
     private String camelToUnderline(String param) {
