@@ -121,18 +121,18 @@ public class SelectBuilderTest {
     }
 
     static class MySysUser extends TkTable {
-        public final TkColumn id = createColumn("id");
-        public final TkColumn name = createColumn("name");
-        public final TkColumn status = createColumn("status");
-        public final TkColumn deptId = createColumn("dept_id");
-        public final TkColumn[] all = new TkColumn[] { id, name, status, deptId };
+        public final TkColumn ID = createColumn("id");
+        public final TkColumn NAME = createColumn("name");
+        public final TkColumn STATUS = createColumn("status");
+        public final TkColumn DEPT_ID = createColumn("dept_id");
+        public final TkColumn[] all = new TkColumn[] { ID, NAME, STATUS, DEPT_ID };
         public MySysUser(String alias) { super("sys_user", alias); }
     }
 
     static class MySysDept extends TkTable {
-        public final TkColumn id = createColumn("id");
-        public final TkColumn name = createColumn("name");
-        public final TkColumn[] all = new TkColumn[] { id, name };
+        public final TkColumn ID = createColumn("id");
+        public final TkColumn NAME = createColumn("name");
+        public final TkColumn[] all = new TkColumn[] { ID, NAME };
         public MySysDept(String alias) { super("sys_dept", alias); }
     }
 
@@ -143,9 +143,9 @@ public class SelectBuilderTest {
 
         SelectBuilder sb = new SelectBuilder()
                 .select(u.all)
-                .select(d.name.as("deptName"))
+                .select(d.NAME.as("deptName"))
                 .from(u)
-                .leftJoin(d).on(w -> w.eq(u.deptId, d.id));
+                .leftJoin(d).on(w -> w.eq(u.DEPT_ID, d.ID));
 
         String sql = sb.toSql();
         Assert.assertTrue(sql.contains("SELECT u.id, u.name, u.status, u.dept_id, d.name AS deptName FROM sys_user u LEFT JOIN sys_dept d ON (u.dept_id = d.id)"));
@@ -157,10 +157,10 @@ public class SelectBuilderTest {
         MySysDept d = new MySysDept("d");
 
         SelectBuilder sb = new SelectBuilder()
-                .select(u.id, u.name, d.name)
+                .select(u.ID, u.NAME, d.NAME)
                 .from(u)
-                .leftJoin(d).on(w -> w.eq(u.deptId, d.id))
-                .where(w -> w.eq(u.status, 1).like(u.name, "vip"));
+                .leftJoin(d).on(w -> w.eq(u.DEPT_ID, d.ID))
+                .where(w -> w.eq(u.STATUS, 1).like(u.NAME, "vip"));
 
         String sql = sb.toSql();
         Assert.assertTrue(sql.contains("SELECT u.id, u.name, d.name FROM sys_user u LEFT JOIN sys_dept d ON (u.dept_id = d.id) WHERE u.status = #{_qw_param_"));

@@ -106,16 +106,17 @@ public class TkMetaProcessor extends AbstractProcessor {
                         }
                     } else {
                         // 默认驼峰转下划线
-                        colName = camelToUnderline(fieldName);
-                    }
-
-                    writer.write("    public final TkColumn " + fieldName + " = createColumn(\"" + colName + "\");\n");
-                    fieldNames.add(fieldName);
+                    colName = camelToUnderline(fieldName);
                 }
+
+                String constantFieldName = colName.toUpperCase();
+                writer.write("    public final TkColumn " + constantFieldName + " = createColumn(\"" + colName + "\");\n");
+                fieldNames.add(constantFieldName);
             }
+        }
 
             if (!fieldNames.isEmpty()) {
-                writer.write("\n    public final TkColumn[] all = new TkColumn[] { " + String.join(", ", fieldNames) + " };\n");
+                writer.write("\n    public final TkColumn[] ALL = new TkColumn[] { " + String.join(", ", fieldNames) + " };\n");
             }
 
             writer.write("}\n");
