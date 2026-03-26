@@ -13,7 +13,7 @@ import javax.persistence.Table;
 @Table(name="sys_user")
 public class SysUser {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = javax.persistence.GenerationType.IDENTITY)
     private Long id;
     private String username;
     private String password;

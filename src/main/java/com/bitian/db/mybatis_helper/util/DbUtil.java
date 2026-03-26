@@ -187,6 +187,24 @@ public class DbUtil {
         return selectOne(finalSql, wrapper.getParams());
     }
 
+    // --- SelectBuilder 完整 DSL 查询 ---
+
+    public static <T> List<T> selectList(SelectBuilder builder, Class<T> clazz) {
+        return selectList(builder.toSql(), builder.getParams(), clazz);
+    }
+
+    public static <T> T selectOne(SelectBuilder builder, Class<T> clazz) {
+        return selectOne(builder.toSql(), builder.getParams(), clazz);
+    }
+
+    public static List<Map<String, Object>> selectList(SelectBuilder builder) {
+        return selectList(builder.toSql(), builder.getParams());
+    }
+
+    public static Map<String, Object> selectOne(SelectBuilder builder) {
+        return selectOne(builder.toSql(), builder.getParams());
+    }
+
     // --- 更新/插入/删除 ---
 
     public static int insert(String sql, Map<String, Object> params) {
