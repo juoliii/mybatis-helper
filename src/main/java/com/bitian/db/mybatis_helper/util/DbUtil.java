@@ -1,6 +1,9 @@
 package com.bitian.db.mybatis_helper.util;
 
+import com.bitian.db.mybatis_helper.dialect.DialectFactory;
+import com.bitian.db.mybatis_helper.dialect.DialectRegistry;
 import com.bitian.db.mybatis_helper.mapper.DbMapper;
+import com.bitian.db.mybatis_helper.meta.PageResult;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ResultMap;
 import org.apache.ibatis.mapping.SqlCommandType;
@@ -200,6 +203,133 @@ public class DbUtil {
 
     public static Map<String, Object> selectOne(SelectBuilder builder) {
         return selectOne(builder.toSql(), builder.getParams());
+    }
+
+    // ============================
+    // 分页查询支持
+    // ============================
+
+    /**
+     * 获取当前数据库方言
+     */
+    private static DialectFactory getDialect() {
+        return DialectRegistry.getDialect(sqlSessionFactory);
+    }
+
+    /**
+     * 查询总记录数（内部方法）
+     */
+    private static long selectCount(String sql, Map<String, Object> params) {
+        String countSql = getDialect().buildCountSql(sql);
+        Map<String, Object> result = selectOne(countSql, params);
+        if (result == null || result.isEmpty()) {
+            return 0;
+        }
+        // COUNT(*) 的结果列名因数据库不同而异，取第一个值即可
+        Object countValue = result.values().iterator().next();
+        return countValue instanceof Number ? ((Number) countValue).longValue() : 0;
+    }
+
+    // --- 分页查询：SQL + params + Entity ---
+
+    /**
+     * 分页查询，返回实体类列表。
+     *
+     * @param sql        原始 SQL
+     * @param params     查询参数（可为 null）
+     * @param clazz      实体类类型
+     * @param pageNumber 页码（从 1 开始）
+     * @param pageSize   每页条数
+     * @param <T>        实体类型
+     * @return 分页结果
+     */
+    public static <T> PageResult<T> selectPage(String sql, Map<String, Object> params,
+                                               Class<T> clazz, int pageNumber, int pageSize) {
+        long total = selectCount(sql, params);
+        if (total == 0) {
+            return new PageResult<>(Collections.<T>emptyList(), 0, pageNumber, pageSize);
+        }
+        int offset = (pageNumber - 1) * pageSize;
+        String pageSql = getDialect().buildPaginationSql(sql, offset, pageSize);
+        List<T> records = selectList(pageSql, params, clazz);
+        return new PageResult<>(records, total, pageNumber, pageSize);
+    }
+
+    /**
+     * 分页查询，返回实体类列表（无参数版本）。
+     */
+    public static <T> PageResult<T> selectPage(String sql, Class<T> clazz,
+                                                int pageNumber, int pageSize) {
+        return selectPage(sql, null, clazz, pageNumber, pageSize);
+    }
+
+    // --- 分页查询：SQL + params + Map ---
+
+    /**
+     * 分页查询，返回 Map 列表。
+     *
+     * @param sql        原始 SQL
+     * @param params     查询参数（可为 null）
+     * @param pageNumber 页码（从 1 开始）
+     * @param pageSize   每页条数
+     * @return 分页结果
+     */
+    public static PageResult<Map<String, Object>> selectPage(String sql, Map<String, Object> params,
+                                                              int pageNumber, int pageSize) {
+        long total = selectCount(sql, params);
+        if (total == 0) {
+            return new PageResult<>(Collections.<Map<String, Object>>emptyList(), 0, pageNumber, pageSize);
+        }
+        int offset = (pageNumber - 1) * pageSize;
+        String pageSql = getDialect().buildPaginationSql(sql, offset, pageSize);
+        List<Map<String, Object>> records = selectList(pageSql, params);
+        return new PageResult<>(records, total, pageNumber, pageSize);
+    }
+
+    /**
+     * 分页查询，返回 Map 列表（无参数版本）。
+     */
+    public static PageResult<Map<String, Object>> selectPage(String sql,
+                                                              int pageNumber, int pageSize) {
+        return selectPage(sql, (Map<String, Object>) null, pageNumber, pageSize);
+    }
+
+    // --- 分页查询：SelectBuilder ---
+
+    /**
+     * 使用 SelectBuilder 分页查询，返回实体类列表。
+     */
+    public static <T> PageResult<T> selectPage(SelectBuilder builder, Class<T> clazz,
+                                                int pageNumber, int pageSize) {
+        return selectPage(builder.toSql(), builder.getParams(), clazz, pageNumber, pageSize);
+    }
+
+    /**
+     * 使用 SelectBuilder 分页查询，返回 Map 列表。
+     */
+    public static PageResult<Map<String, Object>> selectPage(SelectBuilder builder,
+                                                              int pageNumber, int pageSize) {
+        return selectPage(builder.toSql(), builder.getParams(), pageNumber, pageSize);
+    }
+
+    // --- 分页查询：QueryWrapper ---
+
+    /**
+     * 使用 QueryWrapper 分页查询，返回实体类列表。
+     */
+    public static <T> PageResult<T> selectPageByQuery(String baseSql, QueryWrapper wrapper,
+                                                       Class<T> clazz, int pageNumber, int pageSize) {
+        String finalSql = baseSql + wrapper.getSqlSegment();
+        return selectPage(finalSql, wrapper.getParams(), clazz, pageNumber, pageSize);
+    }
+
+    /**
+     * 使用 QueryWrapper 分页查询，返回 Map 列表。
+     */
+    public static PageResult<Map<String, Object>> selectPageByQuery(String baseSql, QueryWrapper wrapper,
+                                                                     int pageNumber, int pageSize) {
+        String finalSql = baseSql + wrapper.getSqlSegment();
+        return selectPage(finalSql, wrapper.getParams(), pageNumber, pageSize);
     }
 
     // --- 更新/插入/删除 ---

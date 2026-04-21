@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * 完整 SQL 构建器，支持 SELECT / FROM / JOIN / WHERE / EXISTS / GROUP BY / HAVING / ORDER BY / LIMIT。
+ * 完整 SQL 构建器，支持 SELECT / FROM / JOIN / WHERE / EXISTS / GROUP BY / HAVING / ORDER BY。
  * <p>
  * 使用示例：
  * <pre>
@@ -24,8 +24,7 @@ import java.util.function.Consumer;
  *     .exists(new SelectBuilder().select("1").from("sys_role r").where().apply("r.user_id = u.id"))
  *     .groupBy("u.dept_id")
  *     .having("COUNT(*) > 1")
- *     .orderByDesc("u.create_time")
- *     .limit(20);
+ *     .orderByDesc("u.create_time");
  *
  * String sql = sb.toSql();
  * Map&lt;String, Object&gt; params = sb.getParams();
@@ -40,8 +39,6 @@ public class SelectBuilder {
     private final List<String> groupBys = new ArrayList<>();
     private String havingClause;
     private final List<String> orderBys = new ArrayList<>();
-    private Integer limitCount;
-    private Integer offsetCount;
     private String alias;
 
     public static SelectBuilder n(){
@@ -262,27 +259,12 @@ public class SelectBuilder {
         return this;
     }
 
-    // ============================
-    // LIMIT / OFFSET
-    // ============================
-
-    public SelectBuilder limit(int count) {
-        this.limitCount = count;
-        return this;
-    }
-
-    public SelectBuilder limit(int count, int offset) {
-        this.limitCount = count;
-        this.offsetCount = offset;
-        return this;
-    }
 
     // ============================
     // SQL 生成
     // ============================
-
     /**
-     * 构建完整 SQL：SELECT ... FROM ... JOIN ... WHERE ... GROUP BY ... HAVING ... ORDER BY ... LIMIT ...
+     * 构建完整 SQL：SELECT ... FROM ... JOIN ... WHERE ... GROUP BY ... HAVING ... ORDER BY ...
      */
     public String toSql() {
         StringBuilder sb = new StringBuilder();
@@ -323,14 +305,6 @@ public class SelectBuilder {
         // ORDER BY
         if (!orderBys.isEmpty()) {
             sb.append(" ORDER BY ").append(String.join(", ", orderBys));
-        }
-
-        // LIMIT
-        if (limitCount != null) {
-            sb.append(" LIMIT ").append(limitCount);
-            if (offsetCount != null) {
-                sb.append(" OFFSET ").append(offsetCount);
-            }
         }
 
         return sb.toString();

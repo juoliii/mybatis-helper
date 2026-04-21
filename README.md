@@ -69,8 +69,7 @@ SelectBuilder sb = new SelectBuilder()
     .groupBy("u.dept_id")
     // HAVING 同理支持 lambda 多条件嵌套
     .having(w -> w.apply("COUNT(*) > 1").or(sub -> sub.apply("MAX(u.status) = 2")))
-    .orderByDesc("u.create_time")
-    .limit(10, 0); // limit 10 offset 0
+    .orderByDesc("u.create_time");
 
 // 直接传入 DbUtil 查询，完全免写 baseSql 和 xml
 List<Map<String, Object>> list = DbUtil.selectList(sb);
@@ -121,4 +120,103 @@ SysUser user = DbUtil.selectOne("SELECT * FROM sys_user LIMIT 1", SysUser.class)
 int rows = DbUtil.insert("INSERT INTO sys_user(name) values(#{name})", params);
 DbUtil.update("UPDATE sys_user SET status = 1 WHERE id = #{id}", params);
 DbUtil.delete("DELETE FROM sys_user WHERE status = -1");
+```
+
+### 分页查询
+
+`DbUtil` 内置了基于数据库方言的分页查询支持，通过 `selectPage` 系列方法即可实现分页，返回 `PageResult` 对象。
+
+**自动方言检测**：无需手动配置，初始化时会通过 JDBC `DatabaseMetaData` 自动识别数据库类型并匹配对应的分页方言。
+
+内置支持的数据库：
+
+| 数据库 | 分页语法 |
+|--------|---------|
+| MySQL / MariaDB / SQLite / H2 | `LIMIT ... OFFSET ...` |
+| PostgreSQL / KingbaseES / openGauss | `LIMIT ... OFFSET ...` |
+| Oracle（12c+） | `OFFSET ... ROWS FETCH NEXT ... ROWS ONLY` |
+| SQL Server（2012+） | `OFFSET ... ROWS FETCH NEXT ... ROWS ONLY` |
+| 达梦（DM） | `LIMIT ... OFFSET ...` |
+
+#### 基本用法
+
+```java
+// 直接 SQL 分页，pageNumber 从 1 开始
+PageResult<SysUser> page = DbUtil.selectPage(
+    "SELECT * FROM sys_user WHERE status = 1",
+    SysUser.class, 1, 10  // 第1页，每页10条
+);
+
+// 带参数的分页查询
+Map<String, Object> params = new HashMap<>();
+params.put("status", 1);
+PageResult<Map<String, Object>> page = DbUtil.selectPage(
+    "SELECT * FROM sys_user WHERE status = #{status}",
+    params, 1, 10
+);
+```
+
+#### 配合 SelectBuilder 分页
+
+```java
+SelectBuilder sb = SelectBuilder.n()
+    .select("*")
+    .from("sys_user")
+    .where(w -> w.eq("status", 1))
+    .orderByDesc("create_time");
+
+PageResult<SysUser> page = DbUtil.selectPage(sb, SysUser.class, 2, 20);
+```
+
+#### 配合 QueryWrapper 分页
+
+```java
+QueryWrapper wrapper = new QueryWrapper();
+wrapper.eq("status", 1).like("name", "test");
+
+PageResult<SysUser> page = DbUtil.selectPageByQuery(
+    "SELECT * FROM sys_user", wrapper, SysUser.class, 1, 10
+);
+```
+
+#### PageResult 字段说明
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `list` | `List<T>` | 当前页数据列表 |
+| `total` | `long` | 总记录数 |
+| `pageNum` | `int` | 当前页码（从 1 开始） |
+| `pageSize` | `int` | 每页条数 |
+| `pages` | `int` | 总页数 |
+
+```java
+PageResult<SysUser> page = DbUtil.selectPage(sql, SysUser.class, 1, 10);
+
+List<SysUser> users = page.getList();    // 当前页数据
+long total = page.getTotal();               // 总记录数
+int pages = page.getPages();      // 总页数
+boolean hasNext = page.isHasNext();           // 是否有下一页
+boolean hasPrev = page.isHasPrevious();       // 是否有上一页
+```
+
+#### 自定义方言扩展
+
+如果使用的数据库不在内置支持列表中，可以通过以下方式扩展：
+
+```java
+// 方式一：注册自定义方言（按数据库产品名匹配）
+DialectRegistry.registerDialect("gbase", new DialectFactory() {
+    @Override
+    public String buildPaginationSql(String sql, int offset, int limit) {
+        return sql + " LIMIT " + limit + " OFFSET " + offset;
+    }
+
+    @Override
+    public String buildCountSql(String sql) {
+        return "SELECT COUNT(*) FROM (" + sql + ") _t";
+    }
+});
+
+// 方式二：直接指定方言（跳过自动检测）
+DialectRegistry.setDialect(new MySqlDialect());
 ```
