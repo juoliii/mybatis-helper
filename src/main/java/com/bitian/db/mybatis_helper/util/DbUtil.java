@@ -3,7 +3,14 @@ package com.bitian.db.mybatis_helper.util;
 import com.bitian.db.mybatis_helper.dialect.DialectFactory;
 import com.bitian.db.mybatis_helper.dialect.DialectRegistry;
 import com.bitian.db.mybatis_helper.mapper.DbMapper;
+import com.bitian.db.mybatis_helper.meta.ColumnInfo;
+import com.bitian.db.mybatis_helper.meta.EntityMetadata;
+import com.bitian.db.mybatis_helper.meta.EntityResolver;
+import com.bitian.db.mybatis_helper.meta.GenId;
+import com.bitian.db.mybatis_helper.meta.IdGenerationType;
 import com.bitian.db.mybatis_helper.meta.PageResult;
+import com.bitian.db.mybatis_helper.meta.UUIDGenId;
+import org.apache.ibatis.executor.keygen.Jdbc3KeyGenerator;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ResultMap;
 import org.apache.ibatis.mapping.SqlCommandType;
@@ -365,4 +372,434 @@ public class DbUtil {
     public static int delete(String sql) {
         return delete(sql, null);
     }
+
+    // ============================
+    // 实体对象 CRUD 支持
+    // （通过 JPA 注解 @Table, @Column, @Id, @Transient 解析实体类映射）
+    // ============================
+
+    /**
+     * 将实体对象中所有字段的值提取到参数 Map 中
+     */
+    private static Map<String, Object> extractEntityParams(Object entity, List<ColumnInfo> columns) {
+        Map<String, Object> params = new HashMap<>();
+        for (ColumnInfo col : columns) {
+            params.put(col.getFieldName(), col.getValue(entity));
+        }
+        return params;
+    }
+
+    // --- insert ---
+
+    /**
+     * 插入实体对象，所有字段都会参与（包括 null 值的字段）。
+     * <p>
+     * 通过 JPA 注解解析表名和列名：
+     * <ul>
+     *   <li>{@code @Table(name = "...")} 指定表名</li>
+     *   <li>{@code @Column(name = "...")} 指定列名</li>
+     *   <li>{@code @Transient} 标记的字段会被跳过</li>
+     *   <li>{@code @KeySql} 指定主键生成策略（IDENTITY/UUID/SQL/CUSTOM）</li>
+     * </ul>
+     *
+     * @param entity 实体对象
+     * @param <T>    实体类型
+     * @return 影响的行数
+     */
+    public static <T> int insert(T entity) {
+        EntityMetadata metadata = EntityResolver.resolve(entity.getClass());
+
+        // 插入前生成主键（UUID / SQL / CUSTOM）
+        applyPreInsertKeyGeneration(entity, metadata);
+
+        // 获取参与 INSERT 的列（IDENTITY 策略的主键列排除）
+        List<ColumnInfo> insertColumns = getInsertColumns(metadata.getColumns());
+
+        String sql = buildInsertSql(metadata.getTableName(), insertColumns);
+        Map<String, Object> params = extractEntityParams(entity, insertColumns);
+
+        // IDENTITY 策略：使用 useGeneratedKeys，插入后回填
+        ColumnInfo identityIdCol = findIdentityIdColumn(metadata);
+        if (identityIdCol != null) {
+            return insertWithIdentityKey(sql, params, entity, identityIdCol);
+        }
+
+        return insert(sql, params);
+    }
+
+    /**
+     * 插入实体对象，仅插入非 null 的字段（Selective）。
+     * <p>
+     * 主键生成策略与 {@link #insert(Object)} 相同。
+     *
+     * @param entity 实体对象
+     * @param <T>    实体类型
+     * @return 影响的行数
+     */
+    public static <T> int insertSelective(T entity) {
+        EntityMetadata metadata = EntityResolver.resolve(entity.getClass());
+
+        // 插入前生成主键（UUID / SQL / CUSTOM）
+        applyPreInsertKeyGeneration(entity, metadata);
+
+        // 获取参与 INSERT 的列（IDENTITY 策略的主键列排除）
+        List<ColumnInfo> insertColumns = getInsertColumns(metadata.getColumns());
+
+        // 过滤出非 null 字段
+        List<ColumnInfo> nonNullColumns = new ArrayList<>();
+        Map<String, Object> params = new HashMap<>();
+        for (ColumnInfo col : insertColumns) {
+            Object value = col.getValue(entity);
+            if (value != null) {
+                nonNullColumns.add(col);
+                params.put(col.getFieldName(), value);
+            }
+        }
+
+        if (nonNullColumns.isEmpty()) {
+            throw new RuntimeException("Entity has no non-null fields to insert.");
+        }
+
+        String sql = buildInsertSql(metadata.getTableName(), nonNullColumns);
+
+        // IDENTITY 策略：使用 useGeneratedKeys，插入后回填
+        ColumnInfo identityIdCol = findIdentityIdColumn(metadata);
+        if (identityIdCol != null) {
+            return insertWithIdentityKey(sql, params, entity, identityIdCol);
+        }
+
+        return insert(sql, params);
+    }
+
+    // --- insert 主键生成辅助方法 ---
+
+    /**
+     * 构建 INSERT SQL
+     */
+    private static String buildInsertSql(String tableName, List<ColumnInfo> columns) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("INSERT INTO ").append(tableName).append(" (");
+
+        StringBuilder values = new StringBuilder();
+        for (int i = 0; i < columns.size(); i++) {
+            ColumnInfo col = columns.get(i);
+            if (i > 0) {
+                sql.append(", ");
+                values.append(", ");
+            }
+            sql.append(col.getColumnName());
+            values.append("#{").append(col.getFieldName()).append("}");
+        }
+        sql.append(") VALUES (").append(values).append(")");
+        return sql.toString();
+    }
+
+    /**
+     * 获取参与 INSERT 的列（排除 IDENTITY 策略的主键列，因为由数据库自增生成）
+     */
+    private static List<ColumnInfo> getInsertColumns(List<ColumnInfo> allColumns) {
+        List<ColumnInfo> result = new ArrayList<>();
+        for (ColumnInfo col : allColumns) {
+            if (col.isId() && col.getGenerationType() == IdGenerationType.IDENTITY) {
+                continue;
+            }
+            result.add(col);
+        }
+        return result;
+    }
+
+    /**
+     * 查找使用 IDENTITY 策略的主键列（仅支持单一 IDENTITY 主键）
+     */
+    private static ColumnInfo findIdentityIdColumn(EntityMetadata metadata) {
+        for (ColumnInfo col : metadata.getIdColumns()) {
+            if (col.getGenerationType() == IdGenerationType.IDENTITY) {
+                return col;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 插入前主键生成：处理 UUID、SQL、CUSTOM 策略，生成的值会设置到实体对象上。
+     * IDENTITY 策略在插入后由数据库生成。
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> void applyPreInsertKeyGeneration(T entity, EntityMetadata metadata) {
+        for (ColumnInfo idCol : metadata.getIdColumns()) {
+            IdGenerationType genType = idCol.getGenerationType();
+            if (genType == IdGenerationType.NONE || genType == IdGenerationType.IDENTITY) {
+                continue;
+            }
+            switch (genType) {
+                case UUID:
+                    idCol.setValue(entity, new UUIDGenId().genId());
+                    break;
+                case SQL:
+                    String keySql = idCol.getKeySql();
+                    if (keySql == null || keySql.isEmpty()) {
+                        throw new RuntimeException("@KeySql(type=SQL) requires a non-empty sql attribute.");
+                    }
+                    Map<String, Object> result = selectOne(keySql);
+                    if (result != null && !result.isEmpty()) {
+                        Object keyValue = result.values().iterator().next();
+                        idCol.setValue(entity, keyValue);
+                    }
+                    break;
+                case CUSTOM:
+                    Class<? extends GenId> genIdClass = idCol.getGenIdClass();
+                    if (genIdClass == null || genIdClass == GenId.None.class) {
+                        throw new RuntimeException("@KeySql(type=CUSTOM) requires a valid genId class.");
+                    }
+                    try {
+                        GenId genId = genIdClass.newInstance();
+                        Object key = genId.genId();
+                        idCol.setValue(entity, key);
+                    } catch (InstantiationException | IllegalAccessException e) {
+                        throw new RuntimeException("Failed to instantiate GenId: " + genIdClass.getName(), e);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    /**
+     * 使用 useGeneratedKeys 执行 INSERT，插入后将数据库生成的主键回填到实体对象。
+     */
+    private static <T> int insertWithIdentityKey(String sql, Map<String, Object> params,
+                                                  T entity, ColumnInfo idCol) {
+        return execute(session -> {
+            Configuration config = session.getConfiguration();
+            String msId = ensureInsertKeyGenStatement(config, idCol.getFieldName(), idCol.getColumnName());
+            Map<String, Object> paramMap = buildParam(sql, params);
+            int rows = session.insert(msId, paramMap);
+            // 回填生成的主键值到实体对象
+            Object generatedKey = paramMap.get(idCol.getFieldName());
+            if (generatedKey != null) {
+                idCol.setValue(entity, generatedKey);
+            }
+            return rows;
+        });
+    }
+
+    /**
+     * 动态创建并注册带有 useGeneratedKeys 的 INSERT MappedStatement
+     */
+    private static String ensureInsertKeyGenStatement(Configuration configuration,
+                                                       String keyProperty, String keyColumn) {
+        String msId = "DbUtil_dynamic_insert_identity_" + keyProperty;
+        if (configuration.hasStatement(msId, false)) {
+            return msId;
+        }
+        synchronized (configuration) {
+            if (configuration.hasStatement(msId, false)) {
+                return msId;
+            }
+            LanguageDriver languageDriver = configuration.getDefaultScriptingLanguageInstance();
+            SqlSource sqlSource = languageDriver.createSqlSource(configuration,
+                    "<script>${_dbutil_sql}</script>", Map.class);
+            MappedStatement ms = new MappedStatement.Builder(configuration, msId, sqlSource, SqlCommandType.INSERT)
+                    .keyGenerator(Jdbc3KeyGenerator.INSTANCE)
+                    .keyProperty(keyProperty)
+                    .keyColumn(keyColumn)
+                    .build();
+            configuration.addMappedStatement(ms);
+            return msId;
+        }
+    }
+
+    // --- update ---
+
+    /**
+     * 根据主键更新实体对象，所有字段都会参与（包括 null 值的字段）。
+     * <p>
+     * 实体类必须包含 {@code @Id} 注解标记的主键字段。
+     *
+     * @param entity 实体对象（主键字段的值作为 WHERE 条件）
+     * @param <T>    实体类型
+     * @return 影响的行数
+     */
+    public static <T> int update(T entity) {
+        EntityMetadata metadata = EntityResolver.resolve(entity.getClass());
+        metadata.requireId();
+
+        List<ColumnInfo> nonIdColumns = metadata.getNonIdColumns();
+        List<ColumnInfo> idColumns = metadata.getIdColumns();
+
+        if (nonIdColumns.isEmpty()) {
+            throw new RuntimeException("Entity has no non-id columns to update.");
+        }
+
+        StringBuilder sql = new StringBuilder();
+        sql.append("UPDATE ").append(metadata.getTableName()).append(" SET ");
+
+        for (int i = 0; i < nonIdColumns.size(); i++) {
+            ColumnInfo col = nonIdColumns.get(i);
+            if (i > 0) {
+                sql.append(", ");
+            }
+            sql.append(col.getColumnName()).append(" = #{").append(col.getFieldName()).append("}");
+        }
+
+        appendWhereId(sql, idColumns);
+
+        Map<String, Object> params = extractEntityParams(entity, metadata.getColumns());
+        return update(sql.toString(), params);
+    }
+
+    /**
+     * 根据主键更新实体对象，仅更新非 null 的字段（Selective）。
+     *
+     * @param entity 实体对象（主键字段的值作为 WHERE 条件）
+     * @param <T>    实体类型
+     * @return 影响的行数
+     */
+    public static <T> int updateSelective(T entity) {
+        EntityMetadata metadata = EntityResolver.resolve(entity.getClass());
+        metadata.requireId();
+
+        List<ColumnInfo> idColumns = metadata.getIdColumns();
+
+        // 过滤出非主键且非 null 的字段
+        List<ColumnInfo> setCols = new ArrayList<>();
+        Map<String, Object> params = new HashMap<>();
+        for (ColumnInfo col : metadata.getNonIdColumns()) {
+            Object value = col.getValue(entity);
+            if (value != null) {
+                setCols.add(col);
+                params.put(col.getFieldName(), value);
+            }
+        }
+
+        if (setCols.isEmpty()) {
+            throw new RuntimeException("Entity has no non-null, non-id fields to update.");
+        }
+
+        // 主键参数也要加入
+        for (ColumnInfo idCol : idColumns) {
+            params.put(idCol.getFieldName(), idCol.getValue(entity));
+        }
+
+        StringBuilder sql = new StringBuilder();
+        sql.append("UPDATE ").append(metadata.getTableName()).append(" SET ");
+
+        for (int i = 0; i < setCols.size(); i++) {
+            ColumnInfo col = setCols.get(i);
+            if (i > 0) {
+                sql.append(", ");
+            }
+            sql.append(col.getColumnName()).append(" = #{").append(col.getFieldName()).append("}");
+        }
+
+        appendWhereId(sql, idColumns);
+
+        return update(sql.toString(), params);
+    }
+
+    /**
+     * 使用 QueryWrapper 条件更新实体对象的非 null 字段。
+     * <p>
+     * 不依赖主键，WHERE 条件完全由 QueryWrapper 指定。
+     *
+     * @param entity  实体对象（提取非 null 字段作为 SET 子句）
+     * @param wrapper 查询条件
+     * @param <T>     实体类型
+     * @return 影响的行数
+     */
+    public static <T> int updateByQuery(T entity, QueryWrapper wrapper) {
+        EntityMetadata metadata = EntityResolver.resolve(entity.getClass());
+
+        List<ColumnInfo> setCols = new ArrayList<>();
+        Map<String, Object> params = new HashMap<>();
+        for (ColumnInfo col : metadata.getColumns()) {
+            Object value = col.getValue(entity);
+            if (value != null) {
+                setCols.add(col);
+                params.put(col.getFieldName(), value);
+            }
+        }
+
+        if (setCols.isEmpty()) {
+            throw new RuntimeException("Entity has no non-null fields to update.");
+        }
+
+        // 合并 QueryWrapper 的参数
+        params.putAll(wrapper.getParams());
+
+        StringBuilder sql = new StringBuilder();
+        sql.append("UPDATE ").append(metadata.getTableName()).append(" SET ");
+
+        for (int i = 0; i < setCols.size(); i++) {
+            ColumnInfo col = setCols.get(i);
+            if (i > 0) {
+                sql.append(", ");
+            }
+            sql.append(col.getColumnName()).append(" = #{").append(col.getFieldName()).append("}");
+        }
+
+        sql.append(wrapper.getSqlSegment());
+
+        return update(sql.toString(), params);
+    }
+
+    // --- delete ---
+
+    /**
+     * 根据主键删除实体对象。
+     * <p>
+     * 从实体对象中提取 {@code @Id} 标记的主键值作为 WHERE 条件。
+     *
+     * @param entity 实体对象（主键字段的值作为 WHERE 条件）
+     * @param <T>    实体类型
+     * @return 影响的行数
+     */
+    public static <T> int delete(T entity) {
+        EntityMetadata metadata = EntityResolver.resolve(entity.getClass());
+        metadata.requireId();
+
+        List<ColumnInfo> idColumns = metadata.getIdColumns();
+
+        StringBuilder sql = new StringBuilder();
+        sql.append("DELETE FROM ").append(metadata.getTableName());
+        appendWhereId(sql, idColumns);
+
+        Map<String, Object> params = new HashMap<>();
+        for (ColumnInfo idCol : idColumns) {
+            params.put(idCol.getFieldName(), idCol.getValue(entity));
+        }
+
+        return delete(sql.toString(), params);
+    }
+
+    /**
+     * 根据实体类型和 QueryWrapper 条件删除记录。
+     *
+     * @param clazz   实体类类型（用于解析表名）
+     * @param wrapper 查询条件
+     * @param <T>     实体类型
+     * @return 影响的行数
+     */
+    public static <T> int deleteByQuery(Class<T> clazz, QueryWrapper wrapper) {
+        EntityMetadata metadata = EntityResolver.resolve(clazz);
+
+        String sql = "DELETE FROM " + metadata.getTableName() + wrapper.getSqlSegment();
+        return delete(sql, wrapper.getParams());
+    }
+
+    /**
+     * 拼接主键 WHERE 条件
+     */
+    private static void appendWhereId(StringBuilder sql, List<ColumnInfo> idColumns) {
+        sql.append(" WHERE ");
+        for (int i = 0; i < idColumns.size(); i++) {
+            ColumnInfo idCol = idColumns.get(i);
+            if (i > 0) {
+                sql.append(" AND ");
+            }
+            sql.append(idCol.getColumnName()).append(" = #{").append(idCol.getFieldName()).append("}");
+        }
+    }
 }
+
