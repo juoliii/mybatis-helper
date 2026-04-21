@@ -1,7 +1,7 @@
 package com.bitian.db.mybatis_helper.util;
 
-import com.bitian.db.mybatis_helper.tk.meta.TkColumn;
-import com.bitian.db.mybatis_helper.tk.meta.TkTable;
+import com.bitian.db.mybatis_helper.meta.BtColumn;
+import com.bitian.db.mybatis_helper.meta.BtTable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,8 +70,8 @@ public class SelectBuilder {
     /**
      * 选择查询的列（强类型支持）
      */
-    public SelectBuilder select(TkColumn... columns) {
-        for (TkColumn col : columns) {
+    public SelectBuilder select(BtColumn... columns) {
+        for (BtColumn col : columns) {
             selectColumns.add(col.getSelectSql());
         }
         return this;
@@ -102,7 +102,7 @@ public class SelectBuilder {
     /**
      * 将一个强类型表模型作为 FROM 表
      */
-    public SelectBuilder from(TkTable table) {
+    public SelectBuilder from(BtTable table) {
         this.fromTable = table.getTableName() + " " + table.getAlias();
         return this;
     }
@@ -127,7 +127,7 @@ public class SelectBuilder {
         return new JoinClause(this, "LEFT JOIN", table);
     }
 
-    public JoinClause leftJoin(TkTable table) {
+    public JoinClause leftJoin(BtTable table) {
         return new JoinClause(this, "LEFT JOIN", table.getTableName() + " " + table.getAlias());
     }
 
@@ -143,7 +143,7 @@ public class SelectBuilder {
         return new JoinClause(this, "RIGHT JOIN", table);
     }
 
-    public JoinClause rightJoin(TkTable table) {
+    public JoinClause rightJoin(BtTable table) {
         return new JoinClause(this, "RIGHT JOIN", table.getTableName() + " " + table.getAlias());
     }
 
@@ -159,7 +159,7 @@ public class SelectBuilder {
         return new JoinClause(this, "INNER JOIN", table);
     }
 
-    public JoinClause innerJoin(TkTable table) {
+    public JoinClause innerJoin(BtTable table) {
         return new JoinClause(this, "INNER JOIN", table.getTableName() + " " + table.getAlias());
     }
 
@@ -176,7 +176,7 @@ public class SelectBuilder {
         return this;
     }
 
-    public SelectBuilder crossJoin(TkTable table) {
+    public SelectBuilder crossJoin(BtTable table) {
         joins.add("CROSS JOIN " + table.getTableName() + " " + table.getAlias());
         return this;
     }
@@ -213,8 +213,8 @@ public class SelectBuilder {
         return this;
     }
 
-    public SelectBuilder groupBy(TkColumn... columns) {
-        for (TkColumn col : columns) {
+    public SelectBuilder groupBy(BtColumn... columns) {
+        for (BtColumn col : columns) {
             groupBys.add(col.getSql());
         }
         return this;
@@ -247,7 +247,7 @@ public class SelectBuilder {
         return this;
     }
 
-    public SelectBuilder orderByAsc(TkColumn column) {
+    public SelectBuilder orderByAsc(BtColumn column) {
         orderBys.add(column.getSql() + " ASC");
         return this;
     }
@@ -257,7 +257,7 @@ public class SelectBuilder {
         return this;
     }
 
-    public SelectBuilder orderByDesc(TkColumn column) {
+    public SelectBuilder orderByDesc(BtColumn column) {
         orderBys.add(column.getSql() + " DESC");
         return this;
     }

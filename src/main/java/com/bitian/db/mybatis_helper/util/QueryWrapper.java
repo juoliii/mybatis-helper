@@ -1,9 +1,8 @@
 package com.bitian.db.mybatis_helper.util;
 
-import com.bitian.db.mybatis_helper.tk.meta.TkColumn;
+import com.bitian.db.mybatis_helper.meta.BtColumn;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -368,13 +367,12 @@ public class QueryWrapper extends HashMap<String, Object> {
     }
 
     // ==========================================
-    // TkColumn 强类型元模型专属重载 (支持跨列自适应对撞运算)
+    // BtColumn 强类型元模型专属重载 (支持跨列自适应对撞运算)
     // ==========================================
-
-    public QueryWrapper eq(TkColumn column, Object val, boolean condition) {
+    public QueryWrapper eq(BtColumn column, Object val, boolean condition) {
         if (condition) {
-            if (val instanceof TkColumn) {
-                conditions.add(column.getSql() + " = " + ((TkColumn) val).getSql());
+            if (val instanceof BtColumn) {
+                conditions.add(column.getSql() + " = " + ((BtColumn) val).getSql());
             } else {
                 eq(column.getSql(), val, true);
             }
@@ -382,14 +380,14 @@ public class QueryWrapper extends HashMap<String, Object> {
         return this;
     }
 
-    public QueryWrapper eq(TkColumn column, Object val) {
+    public QueryWrapper eq(BtColumn column, Object val) {
         return eq(column, val, true);
     }
 
-    public QueryWrapper ne(TkColumn column, Object val, boolean condition) {
+    public QueryWrapper ne(BtColumn column, Object val, boolean condition) {
         if (condition) {
-            if (val instanceof TkColumn) {
-                conditions.add(column.getSql() + " <> " + ((TkColumn) val).getSql());
+            if (val instanceof BtColumn) {
+                conditions.add(column.getSql() + " <> " + ((BtColumn) val).getSql());
             } else {
                 ne(column.getSql(), val, true);
             }
@@ -397,14 +395,14 @@ public class QueryWrapper extends HashMap<String, Object> {
         return this;
     }
 
-    public QueryWrapper ne(TkColumn column, Object val) {
+    public QueryWrapper ne(BtColumn column, Object val) {
         return ne(column, val, true);
     }
 
-    public QueryWrapper gt(TkColumn column, Object val, boolean condition) {
+    public QueryWrapper gt(BtColumn column, Object val, boolean condition) {
         if (condition) {
-            if (val instanceof TkColumn) {
-                conditions.add(column.getSql() + " > " + ((TkColumn) val).getSql());
+            if (val instanceof BtColumn) {
+                conditions.add(column.getSql() + " > " + ((BtColumn) val).getSql());
             } else {
                 gt(column.getSql(), val, true);
             }
@@ -412,14 +410,14 @@ public class QueryWrapper extends HashMap<String, Object> {
         return this;
     }
 
-    public QueryWrapper gt(TkColumn column, Object val) {
+    public QueryWrapper gt(BtColumn column, Object val) {
         return gt(column, val, true);
     }
 
-    public QueryWrapper ge(TkColumn column, Object val, boolean condition) {
+    public QueryWrapper ge(BtColumn column, Object val, boolean condition) {
         if (condition) {
-            if (val instanceof TkColumn) {
-                conditions.add(column.getSql() + " >= " + ((TkColumn) val).getSql());
+            if (val instanceof BtColumn) {
+                conditions.add(column.getSql() + " >= " + ((BtColumn) val).getSql());
             } else {
                 ge(column.getSql(), val, true);
             }
@@ -427,14 +425,14 @@ public class QueryWrapper extends HashMap<String, Object> {
         return this;
     }
 
-    public QueryWrapper ge(TkColumn column, Object val) {
+    public QueryWrapper ge(BtColumn column, Object val) {
         return ge(column, val, true);
     }
 
-    public QueryWrapper lt(TkColumn column, Object val, boolean condition) {
+    public QueryWrapper lt(BtColumn column, Object val, boolean condition) {
         if (condition) {
-            if (val instanceof TkColumn) {
-                conditions.add(column.getSql() + " < " + ((TkColumn) val).getSql());
+            if (val instanceof BtColumn) {
+                conditions.add(column.getSql() + " < " + ((BtColumn) val).getSql());
             } else {
                 lt(column.getSql(), val, true);
             }
@@ -442,14 +440,14 @@ public class QueryWrapper extends HashMap<String, Object> {
         return this;
     }
 
-    public QueryWrapper lt(TkColumn column, Object val) {
+    public QueryWrapper lt(BtColumn column, Object val) {
         return lt(column, val, true);
     }
 
-    public QueryWrapper le(TkColumn column, Object val, boolean condition) {
+    public QueryWrapper le(BtColumn column, Object val, boolean condition) {
         if (condition) {
-            if (val instanceof TkColumn) {
-                conditions.add(column.getSql() + " <= " + ((TkColumn) val).getSql());
+            if (val instanceof BtColumn) {
+                conditions.add(column.getSql() + " <= " + ((BtColumn) val).getSql());
             } else {
                 le(column.getSql(), val, true);
             }
@@ -457,39 +455,39 @@ public class QueryWrapper extends HashMap<String, Object> {
         return this;
     }
 
-    public QueryWrapper le(TkColumn column, Object val) {
+    public QueryWrapper le(BtColumn column, Object val) {
         return le(column, val, true);
     }
 
-    public QueryWrapper like(TkColumn column, String val, boolean condition) {
+    public QueryWrapper like(BtColumn column, String val, boolean condition) {
         return like(column.getSql(), val, condition);
     }
 
-    public QueryWrapper like(TkColumn column, String val) {
+    public QueryWrapper like(BtColumn column, String val) {
         return like(column.getSql(), val, true);
     }
 
-    public QueryWrapper in(TkColumn column, List<?> values, boolean condition) {
+    public QueryWrapper in(BtColumn column, List<?> values, boolean condition) {
         return in(column.getSql(), values, condition);
     }
 
-    public QueryWrapper in(TkColumn column, List<?> values) {
+    public QueryWrapper in(BtColumn column, List<?> values) {
         return in(column.getSql(), values, true);
     }
 
-    public QueryWrapper isNull(TkColumn column, boolean condition) {
+    public QueryWrapper isNull(BtColumn column, boolean condition) {
         return isNull(column.getSql(), condition);
     }
 
-    public QueryWrapper isNull(TkColumn column) {
+    public QueryWrapper isNull(BtColumn column) {
         return isNull(column.getSql(), true);
     }
 
-    public QueryWrapper isNotNull(TkColumn column, boolean condition) {
+    public QueryWrapper isNotNull(BtColumn column, boolean condition) {
         return isNotNull(column.getSql(), condition);
     }
 
-    public QueryWrapper isNotNull(TkColumn column) {
+    public QueryWrapper isNotNull(BtColumn column) {
         return isNotNull(column.getSql(), true);
     }
 

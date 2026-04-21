@@ -1,4 +1,4 @@
-package com.bitian.db.mybatis_helper.util;
+package com.bitian.db.mybatis_helper.provider;
 
 import java.util.Map;
 

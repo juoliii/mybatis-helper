@@ -1,5 +1,6 @@
 package com.bitian.db.mybatis_helper.util;
 
+import com.bitian.db.mybatis_helper.mapper.DbMapper;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ResultMap;
 import org.apache.ibatis.mapping.SqlCommandType;
@@ -118,7 +119,6 @@ public class DbUtil {
     }
 
     // --- Entity 查询支持 ---
-
     public static <T> List<T> selectList(String sql, Map<String, Object> params, Class<T> clazz) {
         return execute(session -> {
             String msId = ensureStatement(session.getConfiguration(), clazz);
@@ -142,7 +142,6 @@ public class DbUtil {
     }
 
     // --- Map 查询支持 ---
-
     public static List<Map<String, Object>> selectList(String sql, Map<String, Object> params) {
         return execute(session -> {
             DbMapper mapper = session.getMapper(DbMapper.class);
@@ -166,7 +165,6 @@ public class DbUtil {
     }
 
     // --- QueryWrapper 查询支持 ---
-
     public static <T> List<T> selectByQuery(String baseSql, QueryWrapper wrapper, Class<T> clazz) {
         String finalSql = baseSql + wrapper.getSqlSegment();
         return selectList(finalSql, wrapper.getParams(), clazz);
@@ -188,7 +186,6 @@ public class DbUtil {
     }
 
     // --- SelectBuilder 完整 DSL 查询 ---
-
     public static <T> List<T> selectList(SelectBuilder builder, Class<T> clazz) {
         return selectList(builder.toSql(), builder.getParams(), clazz);
     }
@@ -206,7 +203,6 @@ public class DbUtil {
     }
 
     // --- 更新/插入/删除 ---
-
     public static int insert(String sql, Map<String, Object> params) {
         return execute(session -> {
             DbMapper mapper = session.getMapper(DbMapper.class);

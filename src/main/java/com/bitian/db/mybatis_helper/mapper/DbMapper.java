@@ -1,5 +1,6 @@
-package com.bitian.db.mybatis_helper.util;
+package com.bitian.db.mybatis_helper.mapper;
 
+import com.bitian.db.mybatis_helper.provider.DbProvider;
 import org.apache.ibatis.annotations.DeleteProvider;
 import org.apache.ibatis.annotations.InsertProvider;
 import org.apache.ibatis.annotations.SelectProvider;

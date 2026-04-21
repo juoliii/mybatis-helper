@@ -63,13 +63,6 @@
             <scope>provided</scope>
         </dependency>
 
-
-        <dependency>
-            <groupId>org.apache.groovy</groupId>
-            <artifactId>groovy</artifactId>
-            <version>4.0.25</version>
-        </dependency>
-
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
@@ -111,13 +104,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>2.2.224</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
             <version>2.7.18</version>
@@ -139,12 +125,6 @@
         </dependency>
 
         <dependency>
-            <groupId>tk.mybatis</groupId>
-            <artifactId>mapper</artifactId>
-            <version>4.2.3</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-jdbc</artifactId>
             <version>6.0.11</version>
@@ -155,29 +135,6 @@
 
     <build>
         <plugins>
-
-            <plugin>
-                <groupId>org.codehaus.gmavenplus</groupId>
-                <artifactId>gmavenplus-plugin</artifactId>
-                <version>4.1.1</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>addSources</goal>
-                            <goal>addTestSources</goal>
-                            <goal>generateStubs</goal>
-                            <goal>compile</goal>
-                            <goal>generateTestStubs</goal>
-                            <goal>compileTests</goal>
-                            <goal>removeStubs</goal>
-                            <goal>removeTestStubs</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <parameters>true</parameters>
-                </configuration>
-            </plugin>
 
             <plugin>
                 <groupId>org.sonatype.central</groupId>
@@ -202,36 +159,6 @@
                         <arg>-proc:none</arg>
                     </compilerArgs>
                 </configuration>
-                <executions>
-                    <!-- 主源码编译阶段：不运行处理器（因为处理器本身就在主源码里） -->
-                    <execution>
-                        <id>default-compile</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <compilerArgs>
-                                <arg>-parameters</arg>
-                                <arg>-proc:none</arg>
-                            </compilerArgs>
-                        </configuration>
-                    </execution>
-                    <!-- 测试源码编译阶段：允许运行处理器（此时处理器已经编译完成在 target/classes 里） -->
-                    <execution>
-                        <id>default-testCompile</id>
-                        <phase>test-compile</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                        <configuration>
-                            <compilerArgs>
-                                <arg>-parameters</arg>
-                                <!-- 这里不设置 -proc:none，默认开启状态 -->
-                            </compilerArgs>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
 
             <plugin>

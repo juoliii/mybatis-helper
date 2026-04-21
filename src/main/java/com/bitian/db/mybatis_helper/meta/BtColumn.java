@@ -1,15 +1,15 @@
-package com.bitian.db.mybatis_helper.tk.meta;
+package com.bitian.db.mybatis_helper.meta;
 
 /**
  * 强类型 SQL DSL 核心元模型：列
  */
-public class TkColumn {
+public class BtColumn {
 
-    private final TkTable table;
+    private final BtTable table;
     private final String columnName;
     private String columnAlias;
 
-    public TkColumn(TkTable table, String columnName) {
+    public BtColumn(BtTable table, String columnName) {
         this.table = table;
         this.columnName = columnName;
     }
@@ -17,15 +17,15 @@ public class TkColumn {
     /**
      * 为当前列起别名，通常仅在 SELECT 投影时使用
      * @param alias 字段别名
-     * @return 全新的带有别名的 TkColumn 实例（保护静态单例常量）
+     * @return 全新的带有别名的 BtColumn 实例（保护静态单例常量）
      */
-    public TkColumn as(String alias) {
-        TkColumn cloned = new TkColumn(this.table, this.columnName);
+    public BtColumn as(String alias) {
+        BtColumn cloned = new BtColumn(this.table, this.columnName);
         cloned.columnAlias = alias;
         return cloned;
     }
 
-    public TkTable getTable() {
+    public BtTable getTable() {
         return table;
     }
 
