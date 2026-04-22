@@ -4,6 +4,7 @@
 - `DbUtil` 提供了一套免写 XML 即可执行动态 SQL 的便捷工具，支持无缝接入 Spring 事务外加完整的面向对象 SQL DSL 构建器。
 - 实体对象 CRUD（通过 JPA 注解 `@Table`、`@Column`、`@Id`、`@Transient` 自动解析映射，免写 SQL 直接传入实体对象进行 insert / update / delete）
 - 主键生成策略（`@KeySql` 注解支持数据库自增 IDENTITY、UUID、SQL 序列、自定义生成器，插入后自动回填主键值）
+- 非 Spring 环境下的轻量级事务管控（基于 ThreadLocal 自动维护同线程事务边界）
 
 ## 2.使用方法
 
@@ -123,6 +124,27 @@ int rows = DbUtil.insert("INSERT INTO sys_user(name) values(#{name})", params);
 DbUtil.update("UPDATE sys_user SET status = 1 WHERE id = #{id}", params);
 DbUtil.delete("DELETE FROM sys_user WHERE status = -1");
 ```
+
+### 非 Spring 环境下的事务支持
+
+在非 Spring 环境下，默认每次调用 CRUD 方法都会自动开启新的 Session 并自动提交。如果你需要在同一个事务中执行多次操作，可以使用 `DbUtil.executeInTransaction`：
+
+```java
+DbUtil.executeInTransaction(() -> {
+    // 以下操作将在同一个底层 SqlSession 事务中执行
+    DbUtil.insert(user1);
+    DbUtil.insert(user2);
+    DbUtil.update(user3);
+    // 如果发生异常，事务会自动回滚；全部成功则自动 commit
+});
+
+// 带返回值的事务操作
+boolean success = DbUtil.executeInTransaction(() -> {
+    DbUtil.insert(user1);
+    return true; 
+});
+```
+> 注：如果在 Spring 环境中（即上下文中检测到 ApplicationContext），该方法会自动安全降级，直接执行传入的逻辑，交由 Spring `@Transactional` 统一接管事务。
 
 ### 实体对象 CRUD（免写 SQL）
 

@@ -33,6 +33,8 @@ public class DbUtil {
     private static SqlSessionFactory sqlSessionFactory;
 
     private static boolean isInSpring=false;
+    
+    private static final ThreadLocal<SqlSession> threadLocalSession = new ThreadLocal<>();
 
     public static boolean isSpringPresent() {
         try {
@@ -71,8 +73,13 @@ public class DbUtil {
                         sqlSessionFactory.getConfiguration().getDefaultExecutorType(),
                         null
                 );
-            else
+            else {
+                SqlSession session = threadLocalSession.get();
+                if (session != null) {
+                    return session;
+                }
                 return sqlSessionFactory.openSession(true);
+            }
         }
         throw new RuntimeException("DbUtil is not initialized. Please call init(SqlSessionFactory) or init(SqlSession) first.");
     }
@@ -88,11 +95,76 @@ public class DbUtil {
             }finally {
                 if(isInSpring)
                     SqlSessionUtils.closeSqlSession(session, sqlSessionFactory);
-                else
-                    session.close();
+                else {
+                    if (threadLocalSession.get() == null) {
+                        session.close();
+                    }
+                }
             }
         }
         throw new RuntimeException("DbUtil is not initialized. Please call init(SqlSessionFactory) or init(SqlSession) first.");
+    }
+
+    /**
+     * 在非 Spring 环境下，在同一事务中执行多个数据库操作。
+     * 示例：
+     * DbUtil.executeInTransaction(() -> {
+     *     DbUtil.insert(entity1);
+     *     DbUtil.insert(entity2);
+     * });
+     */
+    public static void executeInTransaction(Runnable action) {
+        if (isInSpring) {
+            // 如果在 Spring 环境下，交由 Spring 的 @Transactional 控制，直接执行
+            action.run();
+            return;
+        }
+
+        if (threadLocalSession.get() != null) {
+            // 已经在事务中，支持嵌套调用
+            action.run();
+            return;
+        }
+
+        SqlSession session = sqlSessionFactory.openSession(false); // 关闭自动提交
+        try {
+            threadLocalSession.set(session);
+            action.run();
+            session.commit();
+        } catch (Exception e) {
+            session.rollback();
+            throw new RuntimeException(e);
+        } finally {
+            session.close();
+            threadLocalSession.remove();
+        }
+    }
+
+    /**
+     * 在非 Spring 环境下，在同一事务中执行多个数据库操作，并返回结果。
+     */
+    public static <R> R executeInTransaction(java.util.function.Supplier<R> action) {
+        if (isInSpring) {
+            return action.get();
+        }
+
+        if (threadLocalSession.get() != null) {
+            return action.get();
+        }
+
+        SqlSession session = sqlSessionFactory.openSession(false);
+        try {
+            threadLocalSession.set(session);
+            R result = action.get();
+            session.commit();
+            return result;
+        } catch (Exception e) {
+            session.rollback();
+            throw new RuntimeException(e);
+        } finally {
+            session.close();
+            threadLocalSession.remove();
+        }
     }
 
     private static Map<String, Object> buildParam(String sql, Map<String, Object> params) {
