@@ -1,12 +1,11 @@
 package com.bitian.db.mybatis_helper.dialect;
 
+import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.select.PlainSelect;
-import net.sf.jsqlparser.statement.select.Select;
-import net.sf.jsqlparser.statement.select.SelectItem;
-import net.sf.jsqlparser.statement.select.SetOperationList;
+import net.sf.jsqlparser.statement.select.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -89,6 +88,12 @@ public class CountSqlOptimizer {
             Function countFunc = new Function();
             countFunc.setName("COUNT");
             countFunc.setAllColumns(true);
+            // 2. 创建一个代表 "*" 的对象
+            AllColumns allColumns = new AllColumns();
+            // 3. 将 "*" 包装进参数列表
+            ExpressionList<Expression> parameters = new ExpressionList<>(allColumns);
+            countFunc.setParameters(parameters);
+
             ps.setSelectItems(Collections.<SelectItem<?>>singletonList(new SelectItem<>(countFunc)));
 
             return restorePlaceholders(ps.toString(), placeholders);
