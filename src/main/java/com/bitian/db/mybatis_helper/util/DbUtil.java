@@ -10,6 +10,7 @@ import com.bitian.db.mybatis_helper.meta.GenId;
 import com.bitian.db.mybatis_helper.meta.IdGenerationType;
 import com.bitian.db.mybatis_helper.meta.PageResult;
 import com.bitian.db.mybatis_helper.meta.UUIDGenId;
+import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.executor.keygen.Jdbc3KeyGenerator;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ResultMap;
@@ -20,6 +21,8 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.defaults.DefaultSqlSession;
+import org.apache.ibatis.transaction.jdbc.JdbcTransaction;
 import org.mybatis.spring.SqlSessionUtils;
 
 import java.lang.reflect.InvocationTargetException;
@@ -644,9 +647,14 @@ public class DbUtil {
         if (standalone) {
             batchSession = sqlSessionFactory.openSession(ExecutorType.BATCH, false);
         } else {
-            // 使用不可关闭的 Connection 代理，防止 batchSession.close() 关闭共享连接
+            // Spring 环境下 SqlSessionFactory.openSession(ExecutorType, Connection) 不可用
+            // （SpringManagedTransactionFactory 不支持传入裸 Connection），
+            // 因此手动组装：JdbcTransaction + BatchExecutor + DefaultSqlSession
             Connection proxyConn = createNonClosingConnectionProxy(sharedConnection);
-            batchSession = sqlSessionFactory.openSession(ExecutorType.BATCH, proxyConn);
+            Configuration config = sqlSessionFactory.getConfiguration();
+            JdbcTransaction transaction = new JdbcTransaction(proxyConn);
+            Executor executor = config.newExecutor(transaction, ExecutorType.BATCH);
+            batchSession = new DefaultSqlSession(config, executor, false);
         }
 
         try {
@@ -699,17 +707,22 @@ public class DbUtil {
     }
 
     /**
-     * 创建不可关闭的 Connection 动态代理。
-     * 所有方法调用都委托给原始 Connection，但 close() 被忽略，
-     * 防止 BATCH SqlSession 关闭时意外关闭外部事务的共享连接。
+     * 创建事务透明的 Connection 动态代理。
+     * 所有 SQL 执行相关的方法调用都委托给原始 Connection，
+     * 但事务管理方法（close/commit/rollback/setAutoCommit）被忽略，
+     * 防止 BATCH SqlSession 关闭时干扰外部事务的共享连接状态。
      */
     private static Connection createNonClosingConnectionProxy(Connection target) {
         return (Connection) Proxy.newProxyInstance(
                 Connection.class.getClassLoader(),
                 new Class<?>[]{Connection.class},
                 (proxy, method, args) -> {
-                    if ("close".equals(method.getName())) {
-                        return null; // 忽略 close 调用
+                    switch (method.getName()) {
+                        case "close":
+                        case "commit":
+                        case "rollback":
+                        case "setAutoCommit":
+                            return null; // 忽略事务管理调用，由外部事务统一控制
                     }
                     try {
                         return method.invoke(target, args);
