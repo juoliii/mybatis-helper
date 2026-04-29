@@ -17,10 +17,15 @@ import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.scripting.LanguageDriver;
 import org.apache.ibatis.session.Configuration;
+import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionUtils;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -543,6 +548,178 @@ public class DbUtil {
         return insert(sql, params);
     }
 
+    /**
+     * 批量插入实体对象列表，使用 JDBC 批处理（ExecutorType.BATCH）一次性提交，
+     * 而非循环逐条插入，性能远高于逐条 insert。
+     * <p>
+     * 支持事务参与：在 {@link #executeInTransaction(Runnable)} 或 Spring {@code @Transactional}
+     * 中调用时，会通过共享底层 JDBC Connection 加入外部事务，异常时由外部事务统一回滚。
+     * <p>
+     * 所有实体必须为同一类型。主键生成策略与单条 insert 一致：
+     * <ul>
+     *   <li>UUID / SQL / CUSTOM 策略：在插入前生成并设置到实体对象</li>
+     *   <li>IDENTITY 策略：由数据库自增生成，插入后回填到实体对象</li>
+     * </ul>
+     *
+     * @param list 实体对象列表（不能为空，且元素类型必须一致）
+     * @param <T>  实体类型
+     * @return 影响的总行数
+     */
+    public static <T> int insert(List<T> list) {
+        if (list == null || list.isEmpty()) {
+            return 0;
+        }
+
+        T first = list.get(0);
+        EntityMetadata metadata = EntityResolver.resolve(first.getClass());
+
+        // 获取参与 INSERT 的列（IDENTITY 策略的主键列排除）
+        List<ColumnInfo> insertColumns = getInsertColumns(metadata.getColumns());
+        String sql = buildInsertSql(metadata.getTableName(), insertColumns);
+        ColumnInfo identityIdCol = findIdentityIdColumn(metadata);
+
+        // 为每个实体执行插入前的主键生成（UUID / SQL / CUSTOM）
+        for (T entity : list) {
+            applyPreInsertKeyGeneration(entity, metadata);
+        }
+
+        // 判断是否在事务上下文中，获取共享 Connection
+        Connection sharedConnection = getTransactionalConnection();
+
+        if (sharedConnection != null) {
+            // 共享 Connection，加入外部事务（不自行 commit/rollback）
+            return executeBatchOnConnection(sharedConnection, sql, list, insertColumns, identityIdCol, false);
+        } else {
+            // 独立事务
+            return executeBatchOnConnection(null, sql, list, insertColumns, identityIdCol, true);
+        }
+    }
+
+
+    /**
+     * 获取当前事务上下文中的 JDBC Connection。
+     * 如果不在事务中，返回 null。
+     */
+    private static Connection getTransactionalConnection() {
+        // 非 Spring 环境：检查 executeInTransaction 的 threadLocal session
+        if (!isInSpring && threadLocalSession.get() != null) {
+            return threadLocalSession.get().getConnection();
+        }
+
+        // Spring 环境：获取当前事务 session，检查是否在事务中（autoCommit=false）
+        if (isInSpring) {
+            SqlSession springSession = SqlSessionUtils.getSqlSession(
+                    sqlSessionFactory,
+                    sqlSessionFactory.getConfiguration().getDefaultExecutorType(),
+                    null);
+            try {
+                Connection conn = springSession.getConnection();
+                if (!conn.getAutoCommit()) {
+                    return conn;
+                }
+            } catch (SQLException ignored) {
+            } finally {
+                // closeSqlSession 在事务中只减引用计数，不会真正关闭 session 和连接
+                SqlSessionUtils.closeSqlSession(springSession, sqlSessionFactory);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 在指定 Connection（或独立 session）上执行 JDBC 批量插入。
+     *
+     * @param sharedConnection 共享连接（null 表示独立模式）
+     * @param sql              INSERT SQL 模板
+     * @param list             实体列表
+     * @param insertColumns    参与插入的列信息
+     * @param identityIdCol    IDENTITY 主键列（可为 null）
+     * @param standalone       是否独立事务（自行 commit/rollback）
+     */
+    private static <T> int executeBatchOnConnection(Connection sharedConnection, String sql,
+                                                     List<T> list, List<ColumnInfo> insertColumns,
+                                                     ColumnInfo identityIdCol, boolean standalone) {
+        SqlSession batchSession;
+        if (standalone) {
+            batchSession = sqlSessionFactory.openSession(ExecutorType.BATCH, false);
+        } else {
+            // 使用不可关闭的 Connection 代理，防止 batchSession.close() 关闭共享连接
+            Connection proxyConn = createNonClosingConnectionProxy(sharedConnection);
+            batchSession = sqlSessionFactory.openSession(ExecutorType.BATCH, proxyConn);
+        }
+
+        try {
+            Configuration config = batchSession.getConfiguration();
+
+            String msId;
+            if (identityIdCol != null) {
+                msId = ensureInsertKeyGenStatement(config,
+                        identityIdCol.getFieldName(), identityIdCol.getColumnName());
+            } else {
+                msId = ensureBatchInsertStatement(config);
+            }
+
+            // 保存每个实体对应的 paramMap 引用，用于 IDENTITY 策略回填
+            List<Map<String, Object>> paramMaps = new ArrayList<>(list.size());
+
+            for (T entity : list) {
+                Map<String, Object> params = extractEntityParams(entity, insertColumns);
+                Map<String, Object> paramMap = buildParam(sql, params);
+                paramMaps.add(paramMap);
+                batchSession.insert(msId, paramMap);
+            }
+
+            batchSession.flushStatements();
+
+            // 独立模式自行 commit；共享模式由外部事务统一 commit
+            if (standalone) {
+                batchSession.commit();
+            }
+
+            // IDENTITY 策略：flushStatements 后 MyBatis 已将生成的 key 回填到各 paramMap 中
+            if (identityIdCol != null) {
+                for (int i = 0; i < list.size(); i++) {
+                    Object generatedKey = paramMaps.get(i).get(identityIdCol.getFieldName());
+                    if (generatedKey != null) {
+                        identityIdCol.setValue(list.get(i), generatedKey);
+                    }
+                }
+            }
+
+            return list.size();
+        } catch (Exception e) {
+            if (standalone) {
+                batchSession.rollback();
+            }
+            throw new RuntimeException("Batch insert failed.", e);
+        } finally {
+            batchSession.close();
+        }
+    }
+
+    /**
+     * 创建不可关闭的 Connection 动态代理。
+     * 所有方法调用都委托给原始 Connection，但 close() 被忽略，
+     * 防止 BATCH SqlSession 关闭时意外关闭外部事务的共享连接。
+     */
+    private static Connection createNonClosingConnectionProxy(Connection target) {
+        return (Connection) Proxy.newProxyInstance(
+                Connection.class.getClassLoader(),
+                new Class<?>[]{Connection.class},
+                (proxy, method, args) -> {
+                    if ("close".equals(method.getName())) {
+                        return null; // 忽略 close 调用
+                    }
+                    try {
+                        return method.invoke(target, args);
+                    } catch (InvocationTargetException e) {
+                        throw e.getTargetException();
+                    }
+                }
+        );
+    }
+
     // --- insert 主键生成辅助方法 ---
 
     /**
@@ -676,6 +853,28 @@ public class DbUtil {
                     .keyGenerator(Jdbc3KeyGenerator.INSTANCE)
                     .keyProperty(keyProperty)
                     .keyColumn(keyColumn)
+                    .build();
+            configuration.addMappedStatement(ms);
+            return msId;
+        }
+    }
+
+    /**
+     * 动态创建并注册用于批量插入的 INSERT MappedStatement（不带 useGeneratedKeys）
+     */
+    private static String ensureBatchInsertStatement(Configuration configuration) {
+        String msId = "DbUtil_dynamic_batch_insert";
+        if (configuration.hasStatement(msId, false)) {
+            return msId;
+        }
+        synchronized (configuration) {
+            if (configuration.hasStatement(msId, false)) {
+                return msId;
+            }
+            LanguageDriver languageDriver = configuration.getDefaultScriptingLanguageInstance();
+            SqlSource sqlSource = languageDriver.createSqlSource(configuration,
+                    "<script>${_dbutil_sql}</script>", Map.class);
+            MappedStatement ms = new MappedStatement.Builder(configuration, msId, sqlSource, SqlCommandType.INSERT)
                     .build();
             configuration.addMappedStatement(ms);
             return msId;
